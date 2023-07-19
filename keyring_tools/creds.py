@@ -5,10 +5,12 @@ import keyring
 
 
 def b64(value):
+    """Convert a string to its base64 representation"""
     return base64.b64encode(value.encode("utf-8")).decode("utf-8")
 
 
 def get_env(conf):
+    """Load credentials from the OS keyring according to user configuration"""
     env = environ.copy()
     for key, src in conf["keys"].items():
         password = keyring.get_password(src["credential"], src["username"])
