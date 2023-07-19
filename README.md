@@ -8,6 +8,8 @@ Configuration can be stored in three places:
 - `./.keyring-tools`
 - first `pyproject.toml` found while walking file system up from `.`
 
+Configuration is merged where more local configuration values have precendence.
+
 Example `.keyring-tools` configuration:
 
 ```toml
