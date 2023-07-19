@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "keyring-tools"
+version = "0.1.0"
+description = ""
+authors = ["Korijn van Golen <korijn.vangolen@zimmerbiomet.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "keyring_tools"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+keyring = "~24.2.0"
+tomli = "^2.0.1"
+shellingham = "^1.5.0.post1"
+
+[tool.poetry.scripts]
+keyring-cmd = 'keyring_tools.cli_cmd:main'
+keyring-shell = 'keyring_tools.cli_shell:main'
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.0.278"
+black = "^23.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+select = [
+	"E",  # pycodestyle
+	"F",  # pyflakes
+	"I",  # isort
+	"N",  # pep8-naming
+	"ARG",  # flake8-unused-arguments
+	"T10",  # flake8-debugger
+	"RUF",  # Ruff-specific rules
+]
+
+[tool.ruff.isort]
+force-sort-within-sections = true
+order-by-type = false
+lines-after-imports = 2
