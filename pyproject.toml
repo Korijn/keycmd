@@ -16,6 +16,7 @@ shellingham = "^1.5.0.post1"
 [tool.poetry.scripts]
 keyring-cmd = 'keyring_tools.cli_cmd:main'
 keyring-shell = 'keyring_tools.cli_shell:main'
+keyring-tools = 'keyring_tools.__main__:main'
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.278"

@@ -6,6 +6,7 @@ from .shell import run_cmd
 
 
 def main():
+    """Load user configuration, load credentials, run a one-off command"""
     conf = load_conf()
     env = get_env(conf)
     cmd = sys.argv[1:]
