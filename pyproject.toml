@@ -40,3 +40,8 @@ select = [
 force-sort-within-sections = true
 order-by-type = false
 lines-after-imports = 2
+
+# example config for development and testing
+[tool.keyring-tools.keys]
+ARTIFACTS_TOKEN = { credential = "azure@poetry-repository-main", username = "azure" }
+ARTIFACTS_TOKEN_B64 = { credential = "azure@poetry-repository-main", username = "azure", b64 = true }
