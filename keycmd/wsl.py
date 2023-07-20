@@ -9,9 +9,9 @@ def call_host_keyring(python, command):
     p = run(
         [python, "-c", f"import keyring; {command}"], shell=False, capture_output=True
     )
-    stdout, stderr = p.stdout.decode("utf-8").strip(), p.stderr.decode("utf-8").strip()
     if p.returncode != 0:
         error(f"call to WSL host keyring failed (python path: {python}): {stderr}")
+    stdout, stderr = p.stdout.decode("utf-8").strip(), p.stderr.decode("utf-8").strip()
     return stdout
 
 
