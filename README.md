@@ -8,7 +8,7 @@ The main functionality of `keycmd` is to load secrets from your OS keyring and e
 
 This enables you to store sensitive data such as authentication tokens and passwords in your OS keyring, so you no longer need to rely on insecure practises such as `.env` files, or pasting secrets into your terminal. 😱
 
-The most common use case is to load credentials for package managers such as pip, npm when using private package indexes, such as Azure Artifact Feeds. Another common use case is docker build secrets.
+The most common use case is to load credentials for package managers such as pip and npm when using private package indexes, such as Azure Artifact Feeds. Another common use case is docker build secrets.
 
 ## Usage
 
@@ -80,7 +80,7 @@ ARTIFACTS_TOKEN = { credential = "korijn@poetry-repository-main", username = "ko
 ARTIFACTS_TOKEN_B64 = { credential = "korijn@poetry-repository-main", username = "korijn", b64 = true }
 ```
 
-This configuration piggybacks off of the credentials created in the OS keyring by [Poetry](https://python-poetry.org/) when [configuring credentials](https://python-poetry.org/docs/repositories/#configuring-credentials) for a private repository. In this case, we expose the same credential is exposed twice:
+This configuration piggybacks off of the credentials created in the OS keyring by [Poetry](https://python-poetry.org/) when [configuring credentials](https://python-poetry.org/docs/repositories/#configuring-credentials) for a private repository. In this case, the same credential is exposed twice:
 
 * As the environment variable `ARTIFACTS_TOKEN`
 * Again but with base64 encoding applied as the environment variable `ARTIFACTS_TOKEN_B64`
