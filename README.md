@@ -37,3 +37,25 @@ optional arguments:
 ```
 
 The configured credentials will be loaded from the OS keyring only for the duration of the subprocesses.
+
+## Verbose output
+
+If you're not getting the results you expected, use the `-v` flag
+to debug your configuration. For example:
+
+```sh
+❯ poetry run keycmd -v echo %ARTIFACTS_TOKEN_B64%
+keycmd: loading config file C:\Users\kvang\.keycmd
+keycmd: loading config file C:\Users\kvang\dev\keycmd\pyproject.toml
+keycmd: merged config:
+{'keys': {'ARTIFACTS_TOKEN': {'credential': 'azure@poetry-repository-main',
+                              'username': 'azure'},
+          'ARTIFACTS_TOKEN_B64': {'b64': True,
+                                  'credential': 'azure@poetry-repository-main',
+                                  'username': 'azure'}}}
+keycmd: exposing credential azure@poetry-repository-main belonging to user azure as environment variable ARTIFACTS_TOKEN
+keycmd: exposing credential azure@poetry-repository-main belonging to user azure as environment variable ARTIFACTS_TOKEN_B64
+keycmd: detected shell: C:\Windows\System32\cmd.exe
+keycmd: running command: ['C:\\Windows\\System32\\cmd.exe', '/C', 'echo', '%ARTIFACTS_TOKEN_B64%']
+aSdtIG5vdCB0aGF0IHN0dXBpZCA6KQ==
+```
