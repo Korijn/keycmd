@@ -22,6 +22,6 @@ def get_env(conf):
         vlog(
             f"exposing credential {src['credential']}"
             f" belonging to user {src['username']}"
-            f" as environment variable {key}"
+            f" as environment variable {key} (b64: {src.get('b64', False)})"
         )
     return env
