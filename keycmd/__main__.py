@@ -7,6 +7,7 @@ from .conf import load_conf
 from .creds import get_env
 from .logs import error, log, set_verbose
 from .shell import run_cmd, run_shell
+from .wsl import maybe_use_wsl_keyring
 
 
 cli = argparse.ArgumentParser(
@@ -35,12 +36,14 @@ def main():
     """CLI entrypoint"""
     args = cli.parse_args()
 
-    if args.verbose:
-        set_verbose()
-
     if args.version:
         log(f"v{__version__}")
         return
+
+    if args.verbose:
+        set_verbose()
+
+    maybe_use_wsl_keyring()
 
     try:
         conf = load_conf()
