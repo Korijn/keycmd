@@ -18,6 +18,7 @@ keycmd = 'keycmd.__main__:main'
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.278"
 black = "^23.7.0"
+twine = "^4.0.2"
 
 [build-system]
 requires = ["poetry-core"]
