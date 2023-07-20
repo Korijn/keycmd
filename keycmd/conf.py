@@ -1,18 +1,24 @@
 from pathlib import Path
+from pprint import pformat
 
 import tomli
+
+from .logs import vlog
 
 
 def load_toml(path):
     """Load a toml file"""
     with path.open("rb") as fh:
-        return tomli.load(fh)
+        try:
+            return tomli.load(fh)
+        except tomli.TOMLDecodeError as err:
+            raise tomli.TOMLDecodeError(f"invalid TOML in {path}:\n{err}")
 
 
 def load_pyproj(path):
-    """Load [tool.keyring-tools] from a pyproject.toml file"""
+    """Load [tool.keycmd] from a pyproject.toml file"""
     data = load_toml(path)
-    return data.get("tool", {}).get("keyring-tools", {})
+    return data.get("tool", {}).get("keycmd", {})
 
 
 def defaults():
@@ -39,8 +45,8 @@ def load_conf():
     """
     Load merged configuration from the following files:
     - defaults()
-    - ~/.keyring-tools
-    - ./.keyring-tools
+    - ~/.keycmd
+    - ./.keycmd
     - first pyproject.toml found while walking file system up from .
     """
     conf = defaults()
@@ -48,8 +54,9 @@ def load_conf():
 
     # fixed conf locations, in order
     for path in [Path.home(), cwd]:
-        fpath = path / ".keyring-tools"
+        fpath = path / ".keycmd"
         if fpath.is_file():
+            vlog(f"loading config file {fpath}")
             conf = merge_conf(conf, load_toml(fpath))
 
     # dynamic conf locations, walk up from current directory
@@ -57,11 +64,14 @@ def load_conf():
     while cur != cur.anchor:
         pyproj = cur / "pyproject.toml"
         if pyproj.is_file():
+            vlog(f"loading config file {pyproj}")
             conf = merge_conf(conf, load_pyproj(pyproj))
             break
         # stop at the boundary of git repositories
         if (cur / ".git").is_dir():
             break
         cur = cur.parent
+
+    vlog(f"merged config:\n{pformat(conf)}")
 
     return conf

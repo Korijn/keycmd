@@ -3,6 +3,8 @@ from os import environ
 
 import keyring
 
+from .logs import vlog
+
 
 def b64(value):
     """Convert a string to its base64 representation"""
@@ -17,4 +19,9 @@ def get_env(conf):
         if src.get("b64"):
             password = b64(password)
         env[key] = password
+        vlog(
+            f"exposing credential {src['credential']}"
+            f" belonging to user {src['username']}"
+            f" as environment variable {key}"
+        )
     return env

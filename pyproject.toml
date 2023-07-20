@@ -1,11 +1,10 @@
 [tool.poetry]
-name = "keyring-tools"
+name = "keycmd"
 version = "0.1.0"
 description = ""
 authors = ["Korijn van Golen <korijn.vangolen@zimmerbiomet.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "keyring_tools"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -14,9 +13,7 @@ tomli = "^2.0.1"
 shellingham = "^1.5.0.post1"
 
 [tool.poetry.scripts]
-keyring-cmd = 'keyring_tools.cli_cmd:main'
-keyring-shell = 'keyring_tools.cli_shell:main'
-keyring-tools = 'keyring_tools.__main__:main'
+keycmd = 'keycmd.__main__:main'
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.278"
@@ -43,6 +40,6 @@ order-by-type = false
 lines-after-imports = 2
 
 # example config for development and testing
-[tool.keyring-tools.keys]
+[tool.keycmd.keys]
 ARTIFACTS_TOKEN = { credential = "azure@poetry-repository-main", username = "azure" }
 ARTIFACTS_TOKEN_B64 = { credential = "azure@poetry-repository-main", username = "azure", b64 = true }
