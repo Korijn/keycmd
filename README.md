@@ -2,9 +2,11 @@
 
 The purpose of `keycmd` is to load secrets from your OS keyring and expose them as environment variables for a limited amount of time, to minimize exposure and security risk.
 
-A limited amount of time here means only during a single shell command or alternatively for the lifetime of a subshell.
+A limited amount of time here means only during a single shell command or alternatively for the lifetime of a subshell. 🔒
 
-The most common use case is to load credentials for package managers such as pip, npm when using private package indexes, such as Azure Artifact Feeds. Another common use case is docker build secrets, also when connecting to servuces that require authentication with passwords or tokens.
+The most common use case is to load credentials for package managers such as pip, npm when using private package indexes, such as Azure Artifact Feeds. Another common use case is docker build secrets.
+
+This means you can finally stop putting sensitive secrets in `.env` files or other insecure locations! 😱
 
 ## Configuration
 
