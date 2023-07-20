@@ -7,7 +7,6 @@ from .conf import load_conf
 from .creds import get_env
 from .logs import error, log, set_verbose
 from .shell import run_cmd, run_shell
-from .wsl import maybe_use_wsl_keyring
 
 
 cli = argparse.ArgumentParser(
@@ -42,8 +41,6 @@ def main():
 
     if args.verbose:
         set_verbose()
-
-    maybe_use_wsl_keyring()
 
     try:
         conf = load_conf()

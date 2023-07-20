@@ -1,35 +1,36 @@
-from pathlib import Path
+from subprocess import run
 
-import keyring
 from keyring.backend import KeyringBackend
 
-
-def is_wsl():
-    p = Path("/proc/version")
-    if not p.is_file():
-        return False
-    if "WSL2" in p.read_text():
-        return True
-    return False
+from .logs import error
 
 
-class TestKeyring(KeyringBackend):
-    """A test keyring which always outputs the same password
-    """
+def call_host_keyring(python, command):
+    p = run(
+        [python, "-c", f"import keyring; {command}"], shell=False, capture_output=True
+    )
+    stdout, stderr = p.stdout.decode("utf-8").strip(), p.stderr.decode("utf-8").strip()
+    if p.returncode != 0:
+        error(f"call to WSL host keyring failed (python path: {python}): {stderr}")
+    return stdout
+
+
+class WslHostKeyring(KeyringBackend):
     priority = 1
+    python = "py.exe"
 
     def set_password(self, servicename, username, password):
-        pass
+        call_host_keyring(
+            self.python,
+            f"keyring.set_password('{servicename}', '{username}', '{password}')",
+        )
 
     def get_password(self, servicename, username):
-        password = "sdfsdf"
-        print(password)
+        return call_host_keyring(
+            self.python, f"print(keyring.get_password('{servicename}', '{username}'))"
+        )
 
     def delete_password(self, servicename, username):
-        pass
-
-
-def maybe_use_wsl_keyring():
-    if not is_wsl():
-        return
-    keyring.set_keyring(TestKeyring())
+        call_host_keyring(
+            self.python, f"keyring.delete_password('{servicename}', '{username}')"
+        )
