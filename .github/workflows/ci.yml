@@ -29,7 +29,9 @@ jobs:
       - name: Install dependencies
         run: poetry install
       - name: Lint
-        run: poetry run ruff keycmd
+        run: |
+          poetry run ruff keycmd
+          poetry run black --check keycmd
 
   build:
     name: Build and test wheel
