@@ -40,17 +40,17 @@ The first is the most preferred method, since your secrets will only be exposed 
 ## Configuration
 
 > **Note**
-> if you are having trouble configuring keycmd, refer to the section [debugging configuration](#debugging-configuration).
+> if you are having trouble configuring keycmd, refer to section [debugging configuration](#debugging-configuration).
 
 ### Locations
 
 Configuration can be stored in three places (where `~` is the user home folder and `.` is the current working directory when calling `keycmd`):
 
 - `~/.keycmd`
-- `./.keycmd`
 - first `pyproject.toml` found while walking file system up from `.`
+- `./.keycmd`
 
-Configuration is merged where more local configuration values have precendence.
+Configuration files are loaded and merged in the listed order.
 
 ### Options
 
@@ -64,7 +64,7 @@ The options are a nested dictionary, defined as follows:
 
 You can define as many keys as you like. For each key, you are required to define:
 
-* the `key_name`, which is the name of the environment variable under which the credential will be exposed.
+* the `key_name`, which is the name of the environment variable under which the credential will be exposed
 * the `credential`, which is the name of the credential in your OS keyring
 * the `username`, which is the name of the user owning the credential in the OS keyring
 
@@ -72,7 +72,7 @@ Optionally, you can also set `b64` to `true` to apply base64 encoding to the cre
 
 ## Example configuration for Poetry, npm and docker-compose
 
-In this example, I've stored the following configuration in `~/.keyring`:
+In this example, I've stored the following configuration in `~/.keycmd`:
 
 ```toml
 [keys]
@@ -98,7 +98,10 @@ always-auth=true
 //pkgs.dev.azure.com/my_organization/_packaging/main/npm/:email=email
 ```
 
-Now, I can set up my `node_modules` just by calling `keycmd npm install`.
+Now, I can set up my `node_modules` just by calling `keycmd npm install`! 🚀
+
+> **Note**
+> npm will complain if you make any calls such as `npm run [...]` without the environment variable set. 🙄 You can set them to the empty string to make npm shut up. I use `export ARTIFACTS_TOKEN_B64=` (or `setx ARTIFACTS_TOKEN_B64=` on Windows).
 
 Additionally, I also have a docker-compose file in this project which is configured as follows:
 
@@ -110,7 +113,7 @@ secrets:
     environment: ARTIFACTS_TOKEN_B64
 ```
 
-When I call `keycmd docker compose build` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/).
+When I call `keycmd docker compose build` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/). 👌
 
 ## Debugging configuration
 
@@ -122,13 +125,13 @@ to debug your configuration.
 keycmd: loading config file C:\Users\kvang\.keycmd
 keycmd: loading config file C:\Users\kvang\dev\keycmd\pyproject.toml
 keycmd: merged config:
-{'keys': {'ARTIFACTS_TOKEN': {'credential': 'azure@poetry-repository-main',
-                              'username': 'azure'},
+{'keys': {'ARTIFACTS_TOKEN': {'credential': 'korijn@poetry-repository-main',
+                              'username': 'korijn'},
           'ARTIFACTS_TOKEN_B64': {'b64': True,
-                                  'credential': 'azure@poetry-repository-main',
-                                  'username': 'azure'}}}
-keycmd: exposing credential azure@poetry-repository-main belonging to user azure as environment variable ARTIFACTS_TOKEN (b64: False)
-keycmd: exposing credential azure@poetry-repository-main belonging to user azure as environment variable ARTIFACTS_TOKEN_B64 (b64: True)
+                                  'credential': 'korijn@poetry-repository-main',
+                                  'username': 'korijn'}}}
+keycmd: exposing credential korijn@poetry-repository-main belonging to user korijn as environment variable ARTIFACTS_TOKEN (b64: False)
+keycmd: exposing credential korijn@poetry-repository-main belonging to user korijn as environment variable ARTIFACTS_TOKEN_B64 (b64: True)
 keycmd: detected shell: C:\Windows\System32\cmd.exe
 keycmd: running command: ['C:\\Windows\\System32\\cmd.exe', '/C', 'echo', '%ARTIFACTS_TOKEN_B64%']
 aSdtIG5vdCB0aGF0IHN0dXBpZCA6KQ==

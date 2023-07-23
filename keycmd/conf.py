@@ -46,20 +46,19 @@ def load_conf():
     Load merged configuration from the following files:
     - defaults()
     - ~/.keycmd
-    - ./.keycmd
     - first pyproject.toml found while walking file system up from .
+    - ./.keycmd
     """
     conf = defaults()
     cwd = Path.cwd()
 
-    # fixed conf locations, in order
-    for path in [Path.home(), cwd]:
-        fpath = path / ".keycmd"
-        if fpath.is_file():
-            vlog(f"loading config file {fpath}")
-            conf = merge_conf(conf, load_toml(fpath))
+    # ~/.keycmd
+    fpath = Path.home() / ".keycmd"
+    if fpath.is_file():
+        vlog(f"loading config file {fpath}")
+        conf = merge_conf(conf, load_toml(fpath))
 
-    # dynamic conf locations, walk up from current directory
+    # pyproject.toml
     cur = cwd
     while cur != cur.anchor:
         pyproj = cur / "pyproject.toml"
@@ -71,6 +70,12 @@ def load_conf():
         if (cur / ".git").is_dir():
             break
         cur = cur.parent
+
+    # ./.keycmd
+    fpath = cwd / ".keycmd"
+    if fpath.is_file():
+        vlog(f"loading config file {fpath}")
+        conf = merge_conf(conf, load_toml(fpath))
 
     vlog(f"merged config:\n{pformat(conf)}")
 
