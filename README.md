@@ -50,7 +50,7 @@ Configuration can be stored in three places (where `~` is the user home folder a
 - first `pyproject.toml` found while walking file system up from `.`
 - `./.keycmd`
 
-Configuration files are loaded and merged in this order as well.
+Configuration files are loaded and merged in the listed order.
 
 ### Options
 
