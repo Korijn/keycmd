@@ -19,7 +19,7 @@ def vlog(msg):
 
 
 def error(msg):
-    log(f"error: {msg}")
+    print(f"keycmd: error: {msg}")
     exit(1)
 
 
