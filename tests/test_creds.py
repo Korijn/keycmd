@@ -7,12 +7,12 @@ from keycmd.creds import b64, get_env
 
 
 def test_b64():
-    assert b64("foo") == "Zm9v"
+    assert b64("fooß") == "Zm9vw58="
 
 
-key = "__keycmd_test"
-username = "username"
-password = "password"
+key = "__keycmd_testß"
+username = "usernameß"
+password = "passwordß"
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def credentials():
 
 
 def test_get_env(credentials):
-    env = get_env({
+    conf = {
         "keys": {
             "__FOOBAR": {
                 "credential": key,
@@ -35,8 +35,13 @@ def test_get_env(credentials):
                 "b64": True,
             },
         }
-    })
+    }
+    env = get_env(conf)
     assert "__FOOBAR" not in environ
     assert "__FOOBAR_B64" not in environ
     assert env.get("__FOOBAR") == password
     assert env.get("__FOOBAR_B64") == b64(password)
+    assert set(environ.keys()).intersection(set(env.keys())) == set(environ.keys())
+    assert set(environ.keys()).symmetric_difference(set(env.keys())) == set(
+        conf["keys"].keys()
+    )
