@@ -9,7 +9,7 @@ import keyring
 import keycmd.conf
 from keycmd.shell import get_shell
 from keycmd import __version__
-from keycmd.cli import main
+from keycmd.cli import main, cli
 
 
 varname = "KEYCMD_TEST"
@@ -94,3 +94,18 @@ def test_cli_missing_credential(capfd, ch_tmpdir, local_conf, userprofile):
     with pytest.raises(SystemExit) as exc_info:
         main(["echo", "foo"])
     assert exc_info.value.args[0] == 1
+
+
+def test_cli_extra_args():
+    command = ["echo", "foo", "-f", "bla", "--something"]
+    args = cli.parse_args(command)
+    assert args.command == command
+
+    command = ["echo", "foo", "-f", "bla", "--version", "--something"]
+    args = cli.parse_args(command)
+    assert args.command == command
+
+    command = ["--version", "echo", "foo", "-f", "bla", "--version", "--something"]
+    args = cli.parse_args(command)
+    assert args.command == command[1:]
+    assert args.version is True

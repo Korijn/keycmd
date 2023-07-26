@@ -28,7 +28,7 @@ cli.add_argument(
     default=False,
     help="spawn a subshell instead of running a command",
 )
-cli.add_argument("command", nargs="*", help="command to run")
+cli.add_argument("command", nargs=argparse.REMAINDER, help="command to run")
 
 
 def main(args=None):
