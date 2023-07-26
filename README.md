@@ -14,9 +14,11 @@ The most common use case is to load credentials for package managers such as pip
 
 Install `keycmd` from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
 
+That's it, done! 💥
+
 ### pyenv
 
-If you're using pyenv, you're going to have to jump through a few hoops since keycmd needs to be installed globally, which flies directly into the face of what pyenv is trying to accomplish.
+Now, if you're using pyenv, you're going to have to jump through a few hoops since keycmd needs to be installed globally, which flies directly into the face of what pyenv is trying to accomplish.
 
 This guide assumes you've also installed [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv), in order to get you the cleanest of setups. ✨
 
@@ -38,13 +40,11 @@ Explanation: a virtual environment is created just so that keycmd can be install
 
 ## Usage
 
-Install `keycmd` from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
-
 The CLI has the following options:
 
 ```
 ❯ keycmd --help
-usage: keycmd [-h] [-v] [--version] [--shell] [command ...]
+usage: keycmd [-h] [-v] [--version] [--shell] ...
 
 positional arguments:
   command        command to run
@@ -58,7 +58,7 @@ optional arguments:
 
 There are two main ways to use the CLI:
 
-* `keycmd [command ...]`
+* `keycmd ...`
 * `keycmd --shell`
 
 The first is the most preferred method, since your secrets will only be exposed as environment variables during a one-off command. The latter is less preferable, but can be convenient if you are debugging some process that depends on the credentials you are exposing.
