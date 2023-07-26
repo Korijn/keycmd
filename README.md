@@ -36,7 +36,9 @@ mkdir -p $HOME/.local/bin
 ln -s $pathToKeycmd $HOME/.local/bin/keycmd
 ```
 
-Explanation: a virtual environment is created just so that keycmd can be installed independently. Then an empty folder `~/.local/bin` is created and added to the `PATH` environment variable. Finally, a symlink is created to add the `keycmd` binary to the folder, making it available globally, regardless of what pyenv is trying to do with its fancy shims. Now you can use keycmd anywhere! 🚀
+Explanation: a virtual environment is created just so that keycmd can be installed independently. Then an empty folder `~/.local/bin` is created and added to the `PATH` environment variable. Finally, a symlink is created to add the `keycmd` binary to the folder, making it available globally, regardless of what pyenv is trying to do with its fancy shims. Now you can use keycmd anywhere! 😎
+
+For the sharp observer: Yes, you're right, this is the exact same approach poetry takes to install itself globally and make itself available on `PATH` without disturbing pyenv. 🧠
 
 ## Usage
 
