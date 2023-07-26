@@ -6,6 +6,10 @@ import tomli
 from .logs import vlog
 
 
+# exposed for testing
+USERPROFILE = "~"
+
+
 def load_toml(path):
     """Load a toml file"""
     with path.open("rb") as fh:
@@ -41,7 +45,7 @@ def merge_conf(a, b):
     return a
 
 
-def load_conf(user="~"):
+def load_conf():
     """
     Load merged configuration from the following files:
     - defaults()
@@ -53,7 +57,7 @@ def load_conf(user="~"):
     cwd = Path.cwd()
 
     # ~/.keycmd
-    fpath = (Path(user).expanduser() / ".keycmd").resolve()
+    fpath = (Path(USERPROFILE).expanduser() / ".keycmd").resolve()
     if fpath.is_file():
         vlog(f"loading config file {fpath}")
         conf = merge_conf(conf, load_toml(fpath))

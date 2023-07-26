@@ -4,6 +4,7 @@ from pathlib import Path
 import tomli
 import pytest
 
+import keycmd.conf
 from keycmd.conf import load_toml, load_pyproj, defaults, merge_conf, load_conf
 
 
@@ -13,9 +14,9 @@ def test_defaults():
     assert defaults() is not defaults()
 
 
-def test_load_toml(fs):
+def test_load_toml(ch_tmpdir):
     path = Path("foo.toml")
-    fs.create_file(path, contents="[keys]")
+    path.write_text("[keys]", encoding="utf-8")
     doc = load_toml(path)
     assert doc["keys"] == {}
 
@@ -24,15 +25,15 @@ def test_load_toml(fs):
         load_toml(path)
 
     path = Path("baz.toml")
-    fs.create_file(path, contents="[keys}")
+    path.write_text("[keys}", encoding="utf-8")
     with pytest.raises(tomli.TOMLDecodeError) as err:
         load_toml(path)
     assert path.name in err.value.args[0]
 
 
-def test_load_pyproj(fs):
+def test_load_pyproj(ch_tmpdir):
     path = Path("pyproject.toml")
-    fs.create_file(path, contents="[tool.keycmd.keys]")
+    path.write_text("[tool.keycmd.keys]", encoding="utf-8")
     doc = load_pyproj(path)
     assert doc["keys"] == {}
 
@@ -41,7 +42,7 @@ def test_load_pyproj(fs):
         load_pyproj(path)
 
     path = Path("pyproject.toml")
-    path.write_text("[keys}")
+    path.write_text("[keys}", encoding="utf-8")
     with pytest.raises(tomli.TOMLDecodeError) as err:
         load_pyproj(path)
     assert path.name in err.value.args[0]
@@ -98,20 +99,20 @@ def create_pyproj_conf(relpath="."):
         """[tool.keycmd.keys]
 a = { foo = "bar" }
 b = { foo = "bar" }
-"""
+""",
+        encoding="utf-8",
     )
     return pyproj_path
 
 
-def create_user_conf(user=".user/"):
-    user_dir = Path(user).expanduser()
-    user_dir.mkdir(exist_ok=True, parents=True)
-    user_path = (user_dir / ".keycmd").resolve()
+def create_user_conf():
+    user_path = (keycmd.conf.USERPROFILE / ".keycmd").resolve()
     user_path.write_text(
         """[keys]
 a = { foo = "baz" }
 c = { foo = "bar" }
-"""
+""",
+        encoding="utf-8",
     )
     return user_path
 
@@ -122,13 +123,22 @@ def create_local_conf():
         """[keys]
 a = { foo = "quux" }
 d = { foo = "bar" }
-"""
+""",
+        encoding="utf-8",
     )
     return local_path
 
 
 @pytest.fixture
-def ch_tmpdir_deep(tmpdir):
+def userprofile(tmpdir, monkeypatch):
+    user_dir = Path(tmpdir) / ".user"
+    user_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(keycmd.conf, "USERPROFILE", user_dir)
+    yield user_dir
+
+
+@pytest.fixture
+def ch_tmpdir(tmpdir):
     cwd = Path.cwd()
     tmpdir = Path(tmpdir) / "much" / "nested" / "so" / "deep"
     tmpdir.mkdir(parents=True)
@@ -137,17 +147,14 @@ def ch_tmpdir_deep(tmpdir):
     os.chdir(cwd)
 
 
-def test_load_conf(ch_tmpdir_deep):
-    user_dir = ch_tmpdir_deep / ".user"
-
-    conf = load_conf(user=user_dir)
+def test_load_conf(ch_tmpdir, userprofile):
+    conf = load_conf()
     assert conf == {
-        "keys": {
-        },
+        "keys": {},
     }
 
     pyproj_path = create_pyproj_conf()
-    conf = load_conf(user=user_dir)
+    conf = load_conf()
     assert conf == {
         "keys": {
             "a": {
@@ -159,8 +166,8 @@ def test_load_conf(ch_tmpdir_deep):
         },
     }
 
-    create_user_conf(user=user_dir)
-    conf = load_conf(user=user_dir)
+    create_user_conf()
+    conf = load_conf()
     assert conf == {
         "keys": {
             "a": {
@@ -177,7 +184,7 @@ def test_load_conf(ch_tmpdir_deep):
     }
 
     pyproj_path.unlink()
-    conf = load_conf(user=user_dir)
+    conf = load_conf()
     assert conf == {
         "keys": {
             "a": {
@@ -190,7 +197,7 @@ def test_load_conf(ch_tmpdir_deep):
     }
 
     create_local_conf()
-    conf = load_conf(user=user_dir)
+    conf = load_conf()
     assert conf == {
         "keys": {
             "a": {
@@ -207,7 +214,7 @@ def test_load_conf(ch_tmpdir_deep):
     }
 
     pyproj_path = create_pyproj_conf(relpath="..")
-    conf = load_conf(user=user_dir)
+    conf = load_conf()
     assert conf == {
         "keys": {
             "a": {
