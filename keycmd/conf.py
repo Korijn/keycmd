@@ -23,7 +23,7 @@ def load_pyproj(path):
 
 def defaults():
     """Generate the default config"""
-    return {}
+    return {"keys": {}}
 
 
 def merge_conf(a, b):
@@ -41,7 +41,7 @@ def merge_conf(a, b):
     return a
 
 
-def load_conf():
+def load_conf(user="~"):
     """
     Load merged configuration from the following files:
     - defaults()
@@ -53,14 +53,14 @@ def load_conf():
     cwd = Path.cwd()
 
     # ~/.keycmd
-    fpath = Path.home() / ".keycmd"
+    fpath = (Path(user).expanduser() / ".keycmd").resolve()
     if fpath.is_file():
         vlog(f"loading config file {fpath}")
         conf = merge_conf(conf, load_toml(fpath))
 
     # pyproject.toml
     cur = cwd
-    while cur != cur.anchor:
+    while True:
         pyproj = cur / "pyproject.toml"
         if pyproj.is_file():
             vlog(f"loading config file {pyproj}")
@@ -68,6 +68,9 @@ def load_conf():
             break
         # stop at the boundary of git repositories
         if (cur / ".git").is_dir():
+            break
+        # stop if we can't go up anymore
+        if cur.parent == cur:
             break
         cur = cur.parent
 
