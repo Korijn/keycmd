@@ -1,16 +1,20 @@
-from sys import exit
+import sys
 
 
 _verbose = False
 
 
-def set_verbose():
+def set_verbose(verbose=True):
     global _verbose
-    _verbose = True
+    _verbose = verbose
 
 
-def log(msg):
-    print(f"keycmd: {msg}")
+def log(msg, err=False):
+    msg = f"keycmd: {msg}"
+    if err:
+        print(msg, file=sys.stderr)
+    else:
+        print(msg)
 
 
 def vlog(msg):
@@ -19,8 +23,8 @@ def vlog(msg):
 
 
 def error(msg):
-    log(f"error: {msg}")
-    exit(1)
+    log(f"error: {msg}", err=True)
+    sys.exit(1)
 
 
 def vwarn(msg):
