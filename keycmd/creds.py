@@ -19,7 +19,7 @@ def get_env(conf):
         if password is None:
             error(
                 f"MISSING credential {src['credential']}"
-                f" with user {src['username']} "
+                f" with user {src['username']}"
                 f" as it does not exist"
             )
         if src.get("b64"):
@@ -27,7 +27,7 @@ def get_env(conf):
         env[key] = password
         vlog(
             f"exposing credential {src['credential']}"
-            f" with user {src['username']} "
+            f" with user {src['username']}"
             f" as environment variable {key} (b64: {src.get('b64', False)})"
         )
     return env
