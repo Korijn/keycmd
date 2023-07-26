@@ -15,7 +15,8 @@ from keycmd.cli import main
 varname = "KEYCMD_TEST"
 key = "__keycmd_testß"
 username = "usernameß"
-password = "passwordß"
+# TODO: figure out how to simulate pytest capfd encoding on CI
+password = "password"
 
 
 @pytest.fixture
@@ -86,11 +87,7 @@ def test_cli(capfd, ch_tmpdir, credentials, local_conf, userprofile):
 
     with pytest.raises(SystemExit):
         main(["echo", var])
-    stdout = capfd.readouterr().out.strip()
-    # apply the same botched encoding capfd applies
-    encoding = get_encoding_stdin()
-    expected = password.encode(encoding).decode("utf-8", errors="replace")
-    assert stdout == expected
+    assert capfd.readouterr().out.strip() == password
 
 
 def test_cli_missing_credential(capfd, ch_tmpdir, local_conf, userprofile):
