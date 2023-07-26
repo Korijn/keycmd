@@ -31,9 +31,9 @@ cli.add_argument(
 cli.add_argument("command", nargs="*", help="command to run")
 
 
-def main():
+def main(args=None):
     """CLI entrypoint"""
-    args = cli.parse_args()
+    args = cli.parse_args(args=args)
 
     if args.verbose:
         set_verbose()
