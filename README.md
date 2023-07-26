@@ -10,6 +10,32 @@ This enables you to store sensitive data such as authentication tokens and passw
 
 The most common use case is to load credentials for package managers such as pip and npm when using private package indexes, such as Azure Artifact Feeds. Another common use case is docker build secrets.
 
+## Installation
+
+Install `keycmd` from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
+
+### pyenv
+
+If you're using pyenv, you're going to have to jump through a few hoops since keycmd needs to be installed globally, which flies directly into the face of what pyenv is trying to accomplish.
+
+This guide assumes you've also installed [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv), in order to get you the cleanest of setups. ✨
+
+```bash
+## make sure your .bashrc (or .zshrc) contains the following:
+# export PATH="$HOME/.local/bin:$PATH"
+
+# run the following commands one by one
+pyenv virtualenv 3.9 keycmd
+pyenv activate keycmd
+pip install keycmd
+pathToKeycmd=$(python -c 'import sys; from pathlib import Path; print(Path(sys.executable).parent / "keycmd")')
+pyenv deactivate
+mkdir -p $HOME/.local/bin
+ln -s $pathToKeycmd $HOME/.local/bin/keycmd
+```
+
+Explanation: a virtual environment is created just so that keycmd can be installed independently. Then an empty folder `~/.local/bin` is created and added to the `PATH` environment variable. Finally, a symlink is created to add the `keycmd` binary to the folder, making it available globally, regardless of what pyenv is trying to do with its fancy shims. Now you can use keycmd anywhere! 🚀
+
 ## Usage
 
 Install `keycmd` from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
