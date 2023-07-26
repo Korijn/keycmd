@@ -140,6 +140,12 @@ def ch_tmpdir_deep(tmpdir):
 def test_load_conf(ch_tmpdir_deep):
     user_dir = ch_tmpdir_deep / ".user"
 
+    conf = load_conf(user=user_dir)
+    assert conf == {
+        "keys": {
+        },
+    }
+
     pyproj_path = create_pyproj_conf()
     conf = load_conf(user=user_dir)
     assert conf == {
