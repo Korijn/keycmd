@@ -21,7 +21,7 @@ The most common use case is to load credentials for package managers such as pip
 > **Note**
 > If you're intending to install `keycmd` in a WSL or pyenv environment, you'll have to skip ahead to the specific installation instructions for those environments.
 
-### Basic global installation
+### Global installation
 
 Install `keycmd` from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
 
@@ -51,7 +51,7 @@ Explanation: a virtual environment is created just so that keycmd can be install
 
 For the sharp observer: Yes, you're right, this is the exact same approach poetry takes to install itself globally and make itself available on `PATH` without disturbing pyenv. 🧠
 
-### WSL
+### WSL installation
 
 If you're using WSL, you'll run into a wall when you first try to use keycmd. That's because keycmd uses the keyring library to connect to OS keyrings, and keyring will attempt to connect to your linux distro's (probably Ubuntu) keyring background service, which by default isn't actually running in a WSL environment!
 
