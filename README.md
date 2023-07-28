@@ -25,7 +25,9 @@ The most common use case is to load credentials for package managers such as pip
 
 Install `keycmd` from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
 
-Note that the executable `keycmd` has to be installed to a folder that is on your `PATH` environment variable, or the command won't be available globally. Assuming you were able to run `pip` just now, the `keycmd` executable should end up in the exact same location and everything should be fine. To confirm, you can try running `keycmd --version` after installation is complete.
+Note that the executable `keycmd` has to be installed to a folder that is on your `PATH` environment variable, or the command won't be available globally. Assuming you were able to run `pip` just now, the `keycmd` executable should end up in the exact same location and everything should be fine.
+
+To verify keycmd is installed and available, run `keycmd --version`.
 
 ### pyenv installation
 
@@ -33,10 +35,9 @@ Now, if you're using pyenv, you're going to have to jump through a few hoops sin
 
 This guide assumes you've also installed [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv), in order to get you the cleanest of setups. ✨
 
-```bash
-## make sure your .bashrc (or .zshrc) contains the following:
-# export PATH="$HOME/.local/bin:$PATH"
+Run the following commands one by one to install keycmd into its own standalone environment:
 
+```bash
 # run the following commands one by one
 pyenv virtualenv 3.9 keycmd
 pyenv activate keycmd
@@ -47,17 +48,62 @@ mkdir -p $HOME/.local/bin
 ln -s $pathToKeycmd $HOME/.local/bin/keycmd
 ```
 
-Explanation: a virtual environment is created just so that keycmd can be installed independently. Then an empty folder `~/.local/bin` is created and added to the `PATH` environment variable. Finally, a symlink is created to add the `keycmd` binary to the folder, making it available globally, regardless of what pyenv is trying to do with its fancy shims. Now you can use keycmd anywhere! 😎
+Finally, edit your `~/.bashrc` file (or whatever shell profile you use) to include `~/.local/bin` in your `PATH` variable:
 
-For the sharp observer: Yes, you're right, this is the exact same approach poetry takes to install itself globally and make itself available on `PATH` without disturbing pyenv. 🧠
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+> **Note**
+> This line may already be in place in your `~/.bashrc`, for example, if you installed poetry! It's a common trick used to expose specific binaries on `PATH` when they are in folders that also include binaries that should _not_ be exposed on `PATH`.
+
+To verify keycmd is installed and available, run `keycmd --version`.
 
 ### WSL installation
+
+First, you have to install keycmd according to the above instructions (globally, or with pyenv). Then, there's some additional setup to take care of...
 
 If you're using WSL, you'll run into a wall when you first try to use keycmd. That's because keycmd uses the keyring library to connect to OS keyrings, and keyring will attempt to connect to your linux distro's (probably Ubuntu) keyring background service, which by default isn't actually running in a WSL environment!
 
 If you did actually set up your linux distro's keyring background service, that's fine, you can continue using it and don't need to perform any additional steps.
 
 However, if you would like keyring to connect from the WSL environment to your Windows Credential Manager instead, you can install [keyring-pybridge](https://github.com/ClinicalGraphics/keyring-pybridge) in the same python environment where you installed `keycmd`. Please refer to the [installation instructions for WSL](https://github.com/ClinicalGraphics/keyring-pybridge#installation).
+
+## Quickstart
+
+Now that keycmd is installed, we can perform a quick test to see how it works!
+
+Let's add a new key to our OS keyring, and then see how we can expose it with keycmd.
+
+For the purpose of this example, use `my-secret` as the credential name and `my-username` as the... username. I used `foobar` as the password.
+
+On Windows, that means clicking Start and typing "Credential Manager" to find the app. Click the Windows Credentials tab, and click "Add a generic credential". See the screenshots below.
+
+![Credential Manager](docs/wcm.png)
+
+![Add Key](docs/wcm-add-key.png)
+
+> **Note**
+> Pull requests to add visual guides for macOS and linux keyrings are most welcome!
+
+Now, create a `.keycmd` config file in your user home folder. Put the following configuration in the file and save:
+
+```toml
+[keys]
+SECRET = { credential = "my-secret", username = "my-username" }
+```
+
+Finally, open a terminal and run a command to print the secret, so we can see if it worked. That's going to look different depending on what shell you're using, so here's a couple examples:
+
+* Cmd: `keycmd echo %SECRET%`
+* Powershell: `keycmd 'echo $env:SECRET'`
+* Bash: `keycmd 'echo $SECRET'`
+
+You should see the text `foobar` being printed to the terminal.
+
+You've successfully set up keycmd! 👏
+
+See the [advanced configuration example](#advanced-example) below for a more involved usecase for keycmd, where poetry, npm and docker-compose are all put together.
 
 ## Usage
 
@@ -117,7 +163,9 @@ You can define as many keys as you like. For each key, you are required to defin
 
 Optionally, you can also set `b64` to `true` to apply base64 encoding to the credential.
 
-## Example configuration for Poetry, npm and docker-compose
+## Advanced example
+
+This is an example configuration for Poetry, npm and docker-compose. It should inspire you to see the possibilities keycmd provides thanks to its configuration system.
 
 In this example, I've stored the following configuration in `~/.keycmd`:
 
@@ -183,3 +231,9 @@ keycmd: detected shell: C:\Windows\System32\cmd.exe
 keycmd: running command: ['C:\\Windows\\System32\\cmd.exe', '/C', 'echo', '%ARTIFACTS_TOKEN_B64%']
 aSdtIG5vdCB0aGF0IHN0dXBpZCA6KQ==
 ```
+
+## Note on keyring backends
+
+Since keycmd uses keyring as its backend, you're not limited to just working with OS keyrings. 🤯 Any keyring backend will work with keycmd. No special configuration required!
+
+See the [third party backends](https://github.com/jaraco/keyring/#third-party-backends) list for all options.
