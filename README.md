@@ -4,6 +4,12 @@
 [![PyPI version ](https://badge.fury.io/py/keycmd.svg)
 ](https://badge.fury.io/py/keycmd)
 
+Prefix any command with `keycmd` to safely source your secrets and credentials from the OS keyring, instead of risky .env files. Common applications include npm, pip, poetry, docker, docker compose and kubectl!
+
+Supports Windows, macOS and Linux.
+
+## About
+
 The main functionality of `keycmd` is to load secrets from your OS keyring and expose them as environment variables for the duration of a single shell command or alternatively for the lifetime of a subshell.
 
 This enables you to store sensitive data such as authentication tokens and passwords in your OS keyring, so you no longer need to rely on insecure practises such as `.env` files, or pasting secrets into your terminal. 😱
@@ -39,6 +45,10 @@ ln -s $pathToKeycmd $HOME/.local/bin/keycmd
 Explanation: a virtual environment is created just so that keycmd can be installed independently. Then an empty folder `~/.local/bin` is created and added to the `PATH` environment variable. Finally, a symlink is created to add the `keycmd` binary to the folder, making it available globally, regardless of what pyenv is trying to do with its fancy shims. Now you can use keycmd anywhere! 😎
 
 For the sharp observer: Yes, you're right, this is the exact same approach poetry takes to install itself globally and make itself available on `PATH` without disturbing pyenv. 🧠
+
+### WSL
+
+todo
 
 ## Usage
 
