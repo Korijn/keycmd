@@ -55,7 +55,7 @@ export PATH="$HOME/.local/bin:$PATH"
 ```
 
 > **Note**
-> This line already be in place in your `~/.bashrc`, for example if you installed poetry, since it's a common trick used to expose specific binaries on `PATH` when they are in folders with other binaries that you do _not_ want to expose on `PATH`.
+> This line may already be in place in your `~/.bashrc`, for example, if you installed poetry! It's a common trick used to expose specific binaries on `PATH` when they are in folders that also include binaries that should _not_ be exposed on `PATH`.
 
 To verify keycmd is installed and available, run `keycmd --version`.
 
@@ -84,7 +84,7 @@ On Windows, that means clicking Start and typing "Credential Manager" to find th
 ![Add Key](docs/wcm-add-key.png)
 
 > **Note**
-> Pull requests to add visual guides for other platforms are most welcome!
+> Pull requests to add visual guides for macOS and linux keyrings are most welcome!
 
 Now, create a `.keycmd` config file in your user home folder. Put the following configuration in the file and save:
 
