@@ -4,7 +4,7 @@
 [![PyPI version ](https://badge.fury.io/py/keycmd.svg)
 ](https://badge.fury.io/py/keycmd)
 
-Prefix any command with `keycmd` to safely source your secrets and credentials from the OS keyring, instead of risky .env files. Common applications include npm, pip, poetry, docker, docker compose and kubectl!
+Prefix any command with `keycmd` to safely source your secrets and credentials from the OS keyring, instead of risky `.env` files (or worse 🙈). Common applications include npm, pip, poetry, docker, docker compose and kubectl!
 
 Supports Windows, macOS and Linux.
 
@@ -18,11 +18,16 @@ The most common use case is to load credentials for package managers such as pip
 
 ## Installation
 
+> **Note**
+> If you're intending to install `keycmd` in a WSL or pyenv environment, you'll have to skip ahead to the specific installation instructions for those environments.
+
+### Basic global installation
+
 Install `keycmd` from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
 
-That's it, done! 💥
+Note that the executable `keycmd` has to be installed to a folder that is on your `PATH` environment variable, or the command won't be available globally. Assuming you were able to run `pip` just now, the `keycmd` executable should end up in the exact same location and everything should be fine. To confirm, you can try running `keycmd --version` after installation is complete.
 
-### pyenv
+### pyenv installation
 
 Now, if you're using pyenv, you're going to have to jump through a few hoops since keycmd needs to be installed globally, which flies directly into the face of what pyenv is trying to accomplish.
 
@@ -48,7 +53,11 @@ For the sharp observer: Yes, you're right, this is the exact same approach poetr
 
 ### WSL
 
-todo
+If you're using WSL, you'll run into a wall when you first try to use keycmd. That's because keycmd uses the keyring library to connect to OS keyrings, and keyring will attempt to connect to your linux distro's (probably Ubuntu) keyring background service, which by default isn't actually running in a WSL environment!
+
+If you did actually set up your linux distro's keyring background service, that's fine, you can continue using it and don't need to perform any additional steps.
+
+However, if you would like keyring to connect from the WSL environment to your Windows Credential Manager instead, you can install [keyring-pybridge](https://github.com/ClinicalGraphics/keyring-pybridge) in the same python environment where you installed `keycmd`. Please refer to the [installation instructions for WSL](https://github.com/ClinicalGraphics/keyring-pybridge#installation).
 
 ## Usage
 
