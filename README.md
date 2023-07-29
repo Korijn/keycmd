@@ -167,18 +167,60 @@ Optionally, you can also set `b64` to `true` to apply base64 encoding to the cre
 
 This is an example configuration for Poetry, npm and docker-compose. It should inspire you to see the possibilities keycmd provides thanks to its configuration system.
 
-In this example, I've stored the following configuration in `~/.keycmd`:
+In this case, we are authenticating with an Azure DevOps Personal Acces Token to an Azure Artifacts Feed which serves both python and node.js packages.
+
+Let's begin by creating a Packaging (Read) token in Azure DevOps:
+
+![Personal access tokens](docs/create-pat.png)
+
+Make sure to check the Packaging (Read) permission, it's the only permission we need for this example.
+
+![PAT Permissions](docs/create-pat-2.png)
+
+In this case, we won't enter it into the OS keyring manually. We'll [let Poetry handle it](https://python-poetry.org/docs/repositories/#configuring-credentials). Let's review our `pyproject.toml` file:
+
+```toml
+[tool.poetry]
+name = "my-project"
+version = "1.0.0"
+description = ""
+authors = ["My Name <my-name@my-organization.com>"]
+
+[[tool.poetry.source]]
+name = "main"
+url = "https://pkgs.dev.azure.com/my-organization/_packaging/main/pypi/simple/"
+priority = "default"
+
+[tool.poetry.dependencies]
+python = "~3.9"
+
+[build-system]
+requires = ["poetry>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+```
+
+Looks like our poetry source is named `main`, so let's run the appropriate command:
+
+`poetry config http-basic.main <username> <personal-access-token>`
+
+Poetry will create an entry in the OS keyring, and when you run `poetry install` it will automatically authenticate using that credential. No need for `keycmd` here!
+
+Next, we're going to piggyback off this credential with keycmd, to reuse it for npm, and for docker-compose. That way, we only have 1 credential to manage (that means updating it when it expires).
+
+Look up the new credential in your OS keyring, and store the following configuration in a `.keycmd` file. Of course, **review your OS keyring and adjust your configuration to match the credential name and username!**
 
 ```toml
 [keys]
-ARTIFACTS_TOKEN = { credential = "korijn@poetry-repository-main", username = "korijn" }
-ARTIFACTS_TOKEN_B64 = { credential = "korijn@poetry-repository-main", username = "korijn", b64 = true }
+PAT = { credential = "credential-name", username = "your-username" }
+PAT_B64 = { credential = "credential-name", username = "your-username", b64 = true }
 ```
 
-This configuration piggybacks off of the credentials created in the OS keyring by [Poetry](https://python-poetry.org/) when [configuring credentials](https://python-poetry.org/docs/repositories/#configuring-credentials) for a private repository. In this case, the same credential is exposed twice:
+In this example, we are exposing the same credential twice:
 
-* As the environment variable `ARTIFACTS_TOKEN`
-* Again but with base64 encoding applied as the environment variable `ARTIFACTS_TOKEN_B64`
+* As the environment variable `PAT`
+* Again but with base64 encoding applied as the environment variable `PAT_B64`
+
+This is important, because npm requires that we supply the token with base64 encoding, but other tools do not.
 
 For my npm project, I have a [`.npmrc` file](https://docs.npmjs.com/cli/v7/configuring-npm/npmrc) with the following contents:
 
@@ -186,26 +228,26 @@ For my npm project, I have a [`.npmrc` file](https://docs.npmjs.com/cli/v7/confi
 registry=https://pkgs.dev.azure.com/my_organization/_packaging/main/npm/registry/
 always-auth=true
 //pkgs.dev.azure.com/my_organization/_packaging/main/npm/registry/:username=dev
-//pkgs.dev.azure.com/my_organization/_packaging/main/npm/registry/:_password=${ARTIFACTS_TOKEN_B64}
+//pkgs.dev.azure.com/my_organization/_packaging/main/npm/registry/:_password=${PAT_B64}
 //pkgs.dev.azure.com/my_organization/_packaging/main/npm/registry/:email=email
 //pkgs.dev.azure.com/my_organization/_packaging/main/npm/:username=dev
-//pkgs.dev.azure.com/my_organization/_packaging/main/npm/:_password=${ARTIFACTS_TOKEN_B64}
+//pkgs.dev.azure.com/my_organization/_packaging/main/npm/:_password=${PAT_B64}
 //pkgs.dev.azure.com/my_organization/_packaging/main/npm/:email=email
 ```
 
 Now, I can set up my `node_modules` just by calling `keycmd npm install`! 🚀
 
 > **Note**
-> npm will complain if you make any calls such as `npm run [...]` without the environment variable set. 🙄 You can set them to the empty string to make npm shut up. I use `export ARTIFACTS_TOKEN_B64=` (or `setx ARTIFACTS_TOKEN_B64=` on Windows).
+> npm will complain if you make any calls such as `npm run [...]` without the environment variable set. 🙄 You can set them to the empty string to make npm shut up. I use `export PAT_B64=` (or `setx PAT_B64=` on Windows).
 
 Additionally, I also have a docker-compose file in this project which is configured as follows:
 
 ```yml
 secrets:
   token:
-    environment: ARTIFACTS_TOKEN
+    environment: PAT
   token_b64:
-    environment: ARTIFACTS_TOKEN_B64
+    environment: PAT_B64
 ```
 
 When I call `keycmd docker compose build` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/). 👌
@@ -213,7 +255,7 @@ When I call `keycmd docker compose build` these two variables are exposed by key
 ## Debugging configuration
 
 If you're not getting the results you expected, use the `-v` flag
-to debug your configuration.
+to debug your configuration. Keycmd will verbosely tell you about all the steps it's taking.
 
 ```
 ❯ poetry run keycmd -v echo %ARTIFACTS_TOKEN_B64%
@@ -231,6 +273,33 @@ keycmd: detected shell: C:\Windows\System32\cmd.exe
 keycmd: running command: ['C:\\Windows\\System32\\cmd.exe', '/C', 'echo', '%ARTIFACTS_TOKEN_B64%']
 aSdtIG5vdCB0aGF0IHN0dXBpZCA6KQ==
 ```
+
+## OpenAI example
+
+With OpenAI, you're instructed to [use an API key](https://github.com/openai/openai-python#usage) to authenticate with their APIs. When you put that string in a `.env` file, or directly in your code, you risk sharing your API key with the world! 🙅‍♂️
+
+Instead, just put it in your OS keyring, and expose it with keycmd when you run your python scripts or jupyter notebooks.
+
+For example, if you add it to your OS keyring under the name `my-openai-token` and `your-username`, you would use the following `.keycmd` configuration:
+
+```toml
+[keys]
+OPENAI_API_KEY = { credential = "my-openai-token", username = "your-username" }
+```
+
+Now you can run any OpenAI script by just prefixing your commands with `keycmd`. For example:
+
+```bash
+keycmd 'python my_openai_script.py'
+```
+
+Or a jupyter notebook:
+
+```bash
+keycmd 'jupyter notebook'
+```
+
+That's all! 🤘 Now you can delete all the API key handling code and rest easily, knowing your tokens are safe. 🛌💤
 
 ## Note on keyring backends
 
