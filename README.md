@@ -83,8 +83,13 @@ On Windows, that means clicking Start and typing "Credential Manager" to find th
 
 ![Add Key](docs/wcm-add-key.png)
 
+On macOS, open Keychain Access (Command-Space bar, type `keychain access`), then press Command-N to add a 
+new password item. Please note that Account Name holds the username.
+
+![Add New Password Item](docs/keychain-access-new-password-item.png)
+
 > **Note**
-> Pull requests to add visual guides for macOS and linux keyrings are most welcome!
+> Pull requests to add visual guides for linux keyrings are most welcome!
 
 Now, create a `.keycmd` config file in your user home folder. Put the following configuration in the file and save:
 
