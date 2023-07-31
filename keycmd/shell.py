@@ -20,6 +20,9 @@ def exec(args, env):
         # as well as posix systems do
         p = run(args, shell=False, env=env)
         exit(p.returncode)
+    # i know this looks like a bug
+    # but it's a mandatory convention
+    # to pass the process name as the first argument
     os.execvpe(args[0], args, env)
 
 
