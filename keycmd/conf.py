@@ -25,6 +25,36 @@ def load_pyproj(path):
     return data.get("tool", {}).get("keycmd", {})
 
 
+def find_file(fname, first_only=True):
+    """Find a file by walking up the filesystem, starting at cwd"""
+    cur = Path.cwd()
+    home = Path.home()
+    results = []
+    while True:
+        candidate = cur / fname
+        if candidate.is_file():
+            hit = candidate.resolve()
+            if first_only:
+                return hit
+            else:
+                results.append(hit)
+        # don't search outside git repositories
+        if (cur / ".git").is_dir():
+            break
+        # stop before searching the home folder
+        if cur.parent == home:
+            break
+        # stop if we can't go up anymore
+        if cur.parent == cur:
+            break
+        cur = cur.parent
+    if not first_only:
+        # return .keycmd files in order in which they should
+        # be loaded and merged
+        results.reverse()
+        return results
+
+
 def defaults():
     """Generate the default config"""
     return {"keys": {}}
@@ -50,39 +80,28 @@ def load_conf():
     Load merged configuration from the following files:
     - defaults()
     - ~/.keycmd
+    - all .keycmd found while walking file system up from .
     - first pyproject.toml found while walking file system up from .
-    - ./.keycmd
     """
     conf = defaults()
-    cwd = Path.cwd()
 
     # ~/.keycmd
-    fpath = (Path(USERPROFILE).expanduser() / ".keycmd").resolve()
-    if fpath.is_file():
-        vlog(f"loading config file {fpath}")
-        conf = merge_conf(conf, load_toml(fpath))
+    user_keyconf = (Path(USERPROFILE).expanduser() / ".keycmd").resolve()
+    if user_keyconf.is_file():
+        vlog(f"loading config file {user_keyconf}")
+        conf = merge_conf(conf, load_toml(user_keyconf))
+
+    # .keycmd
+    local_keycmds = find_file(".keycmd", first_only=False)
+    for local_keycmd in local_keycmds:
+        vlog(f"loading config file {local_keycmd}")
+        conf = merge_conf(conf, load_toml(local_keycmd))
 
     # pyproject.toml
-    cur = cwd
-    while True:
-        pyproj = cur / "pyproject.toml"
-        if pyproj.is_file():
-            vlog(f"loading config file {pyproj}")
-            conf = merge_conf(conf, load_pyproj(pyproj))
-            break
-        # stop at the boundary of git repositories
-        if (cur / ".git").is_dir():
-            break
-        # stop if we can't go up anymore
-        if cur.parent == cur:
-            break
-        cur = cur.parent
-
-    # ./.keycmd
-    fpath = cwd / ".keycmd"
-    if fpath.is_file():
-        vlog(f"loading config file {fpath}")
-        conf = merge_conf(conf, load_toml(fpath))
+    pyproj = find_file("pyproject.toml")
+    if pyproj is not None:
+        vlog(f"loading config file {pyproj}")
+        conf = merge_conf(conf, load_pyproj(pyproj))
 
     vlog(f"merged config:\n{pformat(conf)}")
 
