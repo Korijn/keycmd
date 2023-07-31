@@ -9,7 +9,18 @@ from shellingham import detect_shell, ShellDetectionFailure
 from .logs import vlog, vwarn
 
 
-USE_SUBPROCESS = False
+USE_SUBPROCESS = False  # exposed for testing
+IS_WINDOWS = os.name == "nt"
+IS_POSIX = os.name == "posix"
+
+
+def exec(args, env):
+    if USE_SUBPROCESS or IS_WINDOWS:
+        # windows does not support process replacement
+        # as well as posix systems do
+        p = run(args, shell=False, env=env)
+        exit(p.returncode)
+    os.execvpe(args[0], args, env)
 
 
 def get_shell():
@@ -19,9 +30,9 @@ def get_shell():
         shell_name, shell_path = detect_shell(os.getpid())
     except ShellDetectionFailure:
         vwarn("failed to detect parent process shell, falling back to system default")
-        if os.name == "posix":
+        if IS_POSIX:
             shell_path = os.environ["SHELL"]
-        elif os.name == "nt":
+        elif IS_WINDOWS:
             shell_path = os.environ["COMSPEC"]
         else:
             raise NotImplementedError(f"os {os.name} support not available")
@@ -33,13 +44,9 @@ def get_shell():
 def run_shell(env=None):
     """Open an interactive shell for the user to interact
     with."""
-    _, shell_path = get_shell()
-    vlog("spawning subshell")
-    if USE_SUBPROCESS:
-        p = run(shell_path, shell=False, env=env)
-        exit(p.returncode)
-    else:
-        os.execlpe(shell_path, env)
+    shell_name, shell_path = get_shell()
+    vlog(f"spawning subshell: {shell_name}")
+    exec([shell_path], env)
 
 
 def run_cmd(cmd, env=None):
@@ -50,8 +57,4 @@ def run_cmd(cmd, env=None):
         opt = "/C"
     full_command = [shell_path, opt, *cmd]
     vlog(f"running command: {pformat(full_command)}")
-    if USE_SUBPROCESS:
-        p = run(full_command, shell=False, env=env)
-        exit(p.returncode)
-    else:
-        os.execvpe(full_command[0], full_command[1:], env)
+    exec(full_command, env)
