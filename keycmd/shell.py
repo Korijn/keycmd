@@ -9,6 +9,9 @@ from shellingham import detect_shell, ShellDetectionFailure
 from .logs import vlog, vwarn
 
 
+USE_SUBPROCESS = False
+
+
 def get_shell():
     """Use shellingham to detect the shell that invoked
     this Python process"""
@@ -32,8 +35,11 @@ def run_shell(env=None):
     with."""
     _, shell_path = get_shell()
     vlog("spawning subshell")
-    p = run(shell_path, shell=False, env=env)
-    exit(p.returncode)
+    if USE_SUBPROCESS:
+        p = run(shell_path, shell=False, env=env)
+        exit(p.returncode)
+    else:
+        os.execlpe(shell_path, env)
 
 
 def run_cmd(cmd, env=None):
@@ -44,5 +50,8 @@ def run_cmd(cmd, env=None):
         opt = "/C"
     full_command = [shell_path, opt, *cmd]
     vlog(f"running command: {pformat(full_command)}")
-    p = run(full_command, shell=False, env=env)
-    exit(p.returncode)
+    if USE_SUBPROCESS:
+        p = run(full_command, shell=False, env=env)
+        exit(p.returncode)
+    else:
+        os.execvpe(full_command[0], full_command[1:], env)
