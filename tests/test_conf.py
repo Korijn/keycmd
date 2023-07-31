@@ -5,7 +5,14 @@ import tomli
 import pytest
 
 import keycmd.conf
-from keycmd.conf import load_toml, load_pyproj, defaults, merge_conf, load_conf
+from keycmd.conf import (
+    find_file,
+    load_toml,
+    load_pyproj,
+    defaults,
+    merge_conf,
+    load_conf,
+)
 
 
 def test_defaults():
@@ -46,6 +53,24 @@ def test_load_pyproj(ch_tmpdir):
     with pytest.raises(tomli.TOMLDecodeError) as err:
         load_pyproj(path)
     assert path.name in err.value.args[0]
+
+
+def create_path(p):
+    p = Path(p).expanduser().resolve()
+    p.parent.mkdir(exist_ok=True, parents=True)
+    p.touch()
+    return p
+
+
+def test_find_file(ch_tmpdir):
+    p1 = create_path("../.blabla")
+    p2 = create_path("../../.blabla")
+    p3 = create_path("../../../.blabla")
+    p4 = create_path("~/.blabla")
+    assert find_file(".blabla") == p1
+    assert find_file(".blabla", first_only=False) == [p3, p2, p1]
+    (p2.parent / ".git").mkdir(exist_ok=True, parents=True)
+    assert find_file(".blabla", first_only=False) == [p2, p1]
 
 
 def test_merge_conf():
@@ -117,13 +142,18 @@ c = { foo = "bar" }
     return user_path
 
 
-def create_local_conf():
-    local_path = Path(".keycmd")
-    local_path.write_text(
-        """[keys]
+def create_local_conf(
+    relpath=".",
+    content="""[keys]
 a = { foo = "quux" }
 d = { foo = "bar" }
 """,
+):
+    local_dir = Path(relpath)
+    local_dir.mkdir(exist_ok=True, parents=True)
+    local_path = (local_dir / ".keycmd").resolve()
+    local_path.write_text(
+        content,
         encoding="utf-8",
     )
     return local_path
@@ -171,7 +201,6 @@ def test_load_conf(ch_tmpdir, userprofile):
     assert conf == {
         "keys": {
             "a": {
-                # pyproject.toml takes precedence
                 "foo": "bar",
             },
             "b": {
@@ -201,7 +230,6 @@ def test_load_conf(ch_tmpdir, userprofile):
     assert conf == {
         "keys": {
             "a": {
-                # .keycmd takes precedence
                 "foo": "quux",
             },
             "c": {
@@ -218,8 +246,7 @@ def test_load_conf(ch_tmpdir, userprofile):
     assert conf == {
         "keys": {
             "a": {
-                # .keycmd takes precedence
-                "foo": "quux",
+                "foo": "bar",
             },
             "b": {
                 "foo": "bar",
@@ -229,6 +256,33 @@ def test_load_conf(ch_tmpdir, userprofile):
             },
             "d": {
                 "foo": "bar",
+            },
+        },
+    }
+
+    create_local_conf(
+        relpath="..",
+        content="""[keys]
+e = { foo = "quux" }
+""",
+    )
+    conf = load_conf()
+    assert conf == {
+        "keys": {
+            "a": {
+                "foo": "bar",
+            },
+            "b": {
+                "foo": "bar",
+            },
+            "c": {
+                "foo": "bar",
+            },
+            "d": {
+                "foo": "bar",
+            },
+            "e": {
+                "foo": "quux",
             },
         },
     }

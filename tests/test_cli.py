@@ -7,6 +7,7 @@ import pytest
 import keyring
 
 import keycmd.conf
+import keycmd.shell
 from keycmd.shell import get_shell
 from keycmd import __version__
 from keycmd.cli import main, cli
@@ -17,6 +18,12 @@ key = "__keycmd_testß"
 username = "usernameß"
 # TODO: figure out how to simulate pytest capfd encoding on CI
 password = "password"
+
+
+@pytest.fixture
+def subprocess(monkeypatch):
+    monkeypatch.setattr(keycmd.shell, "USE_SUBPROCESS", True)
+    yield
 
 
 @pytest.fixture
@@ -76,7 +83,7 @@ def test_cli_version(capfd):
     assert capfd.readouterr().out.strip() == f"keycmd: v{__version__}"
 
 
-def test_cli(capfd, ch_tmpdir, credentials, local_conf, userprofile):
+def test_cli(capfd, ch_tmpdir, credentials, local_conf, userprofile, subprocess):
     name, _ = get_shell()
     if name == "cmd":
         var = f"%{varname}%"
@@ -90,7 +97,7 @@ def test_cli(capfd, ch_tmpdir, credentials, local_conf, userprofile):
     assert capfd.readouterr().out.strip() == password
 
 
-def test_cli_missing_credential(capfd, ch_tmpdir, local_conf, userprofile):
+def test_cli_missing_credential(capfd, ch_tmpdir, local_conf, userprofile, subprocess):
     with pytest.raises(SystemExit) as exc_info:
         main(["echo", "foo"])
     assert exc_info.value.args[0] == 1
