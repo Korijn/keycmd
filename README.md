@@ -140,8 +140,11 @@ The first is the most preferred method, since your secrets will only be exposed 
 Configuration can be stored in three places (where `~` is the user home folder and `.` is the current working directory when calling `keycmd`):
 
 - `~/.keycmd`
+- all `.keycmd` found while walking file system up from `.`
 - first `pyproject.toml` found while walking file system up from `.`
-- `./.keycmd`
+
+> **Note:**
+> The search for `.keycmd` and `pyproject.toml` will stop at the root of a git repository, and before the user home folder, to ensure your configuration can be applied locally to subtrees of your filesystem.
 
 Configuration files are loaded and merged in the listed order.
 
@@ -162,6 +165,33 @@ You can define as many keys as you like. For each key, you are required to defin
 * the `username`, which is the name of the user owning the credential in the OS keyring
 
 Optionally, you can also set `b64` to `true` to apply base64 encoding to the credential.
+
+## OpenAI example
+
+With OpenAI, you're instructed to [use an API key](https://github.com/openai/openai-python#usage) to authenticate with their APIs. When you put that string in a `.env` file, or directly in your code, you risk sharing your API key with the world! 🙅‍♂️
+
+Instead, just put it in your OS keyring, and expose it with keycmd when you run your python scripts or jupyter notebooks.
+
+For example, if you add it to your OS keyring under the name `my-openai-token` and `your-username`, you would use the following `.keycmd` configuration:
+
+```toml
+[keys]
+OPENAI_API_KEY = { credential = "my-openai-token", username = "your-username" }
+```
+
+Now you can run any OpenAI script by just prefixing your commands with `keycmd`. For example:
+
+```bash
+keycmd 'python my_openai_script.py'
+```
+
+Or a jupyter notebook:
+
+```bash
+keycmd 'jupyter notebook'
+```
+
+That's all! 🤘 Now you can rest easily, knowing your tokens are safe. 🛌💤
 
 ## Advanced example
 
@@ -273,33 +303,6 @@ keycmd: detected shell: C:\Windows\System32\cmd.exe
 keycmd: running command: ['C:\\Windows\\System32\\cmd.exe', '/C', 'echo', '%ARTIFACTS_TOKEN_B64%']
 aSdtIG5vdCB0aGF0IHN0dXBpZCA6KQ==
 ```
-
-## OpenAI example
-
-With OpenAI, you're instructed to [use an API key](https://github.com/openai/openai-python#usage) to authenticate with their APIs. When you put that string in a `.env` file, or directly in your code, you risk sharing your API key with the world! 🙅‍♂️
-
-Instead, just put it in your OS keyring, and expose it with keycmd when you run your python scripts or jupyter notebooks.
-
-For example, if you add it to your OS keyring under the name `my-openai-token` and `your-username`, you would use the following `.keycmd` configuration:
-
-```toml
-[keys]
-OPENAI_API_KEY = { credential = "my-openai-token", username = "your-username" }
-```
-
-Now you can run any OpenAI script by just prefixing your commands with `keycmd`. For example:
-
-```bash
-keycmd 'python my_openai_script.py'
-```
-
-Or a jupyter notebook:
-
-```bash
-keycmd 'jupyter notebook'
-```
-
-That's all! 🤘 Now you can delete all the API key handling code and rest easily, knowing your tokens are safe. 🛌💤
 
 ## Note on keyring backends
 
