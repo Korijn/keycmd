@@ -69,6 +69,16 @@ If you did actually set up your linux distro's keyring background service, that'
 
 However, if you would like keyring to connect from the WSL environment to your Windows Credential Manager instead, you can install [keyring-pybridge](https://github.com/ClinicalGraphics/keyring-pybridge) in the same python environment where you installed `keycmd`. Please refer to the [installation instructions for WSL](https://github.com/ClinicalGraphics/keyring-pybridge#installation).
 
+### Up- and downgrading
+
+If at a later point in time, you want to install a different version of keycmd, just use pip again.
+
+> **Note**
+> If you're using pyenv, make sure to activate the virtual environment first with `pyenv activate keycmd`. Don't forget to `pyenv deactivate` afterwards.
+
+* To upgrade to latest: `pip install -U keycmd`
+* To install a specific version: `pip install keycmd==0.6.0`
+
 ## Quickstart
 
 Now that keycmd is installed, we can perform a quick test to see how it works!
