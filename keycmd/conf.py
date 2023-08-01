@@ -68,7 +68,7 @@ def merge_conf(a, b):
     a = a.copy()
     for key, value in b.items():
         if isinstance(value, dict):
-            old_value = a.setdefault(key, {})
+            old_value = a.get(key, {})
             a[key] = merge_conf(old_value, value)
         else:
             a[key] = value
@@ -94,6 +94,9 @@ def load_conf():
     # .keycmd
     local_keycmds = find_file(".keycmd", first_only=False)
     for local_keycmd in local_keycmds:
+        if local_keycmd == user_keyconf:
+            vlog(f"skipping config file {local_keycmd} (already loaded)")
+            continue
         vlog(f"loading config file {local_keycmd}")
         conf = merge_conf(conf, load_toml(local_keycmd))
 
