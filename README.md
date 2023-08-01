@@ -61,13 +61,16 @@ To verify keycmd is installed and available, run `keycmd --version`.
 
 ### WSL installation
 
-First, you have to install keycmd according to the above instructions (globally, or with pyenv). Then, there's some additional setup to take care of...
-
 If you're using WSL, you'll run into a wall when you first try to use keycmd. That's because keycmd uses the keyring library to connect to OS keyrings, and keyring will attempt to connect to your linux distro's (probably Ubuntu) keyring background service, which by default isn't actually running in a WSL environment!
 
 If you did actually set up your linux distro's keyring background service, that's fine, you can continue using it and don't need to perform any additional steps.
 
-However, if you would like keyring to connect from the WSL environment to your Windows Credential Manager instead, you can install [keyring-pybridge](https://github.com/ClinicalGraphics/keyring-pybridge) in the same python environment where you installed `keycmd`. Please refer to the [installation instructions for WSL](https://github.com/ClinicalGraphics/keyring-pybridge#installation).
+> **Note**
+> Just because you installed WSL on your system, does not mean you are actually using it. If you are not sure, one way to check is to go through the [Quickstart](#quickstart) steps below and see if you get an error message from keyring telling you that no backend is available.
+
+However, if you would like keyring to connect from the WSL environment to your Windows Credential Manager instead, you can install [keyring-pybridge](https://github.com/ClinicalGraphics/keyring-pybridge) in the same python environment where you installed `keycmd`.
+
+First, you have to install keycmd according to the above instructions (globally, or with pyenv). Then, continue with the [installation instructions for WSL](https://github.com/ClinicalGraphics/keyring-pybridge#installation).
 
 ### Up- and downgrading
 
