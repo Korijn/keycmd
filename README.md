@@ -35,6 +35,9 @@ Now, if you're using pyenv, you're going to have to jump through a few hoops sin
 
 This guide assumes you've also installed [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv), in order to get you the cleanest of setups. ✨
 
+> **Note**
+> These pyenv instructions are for pyenv on Linux and MacOS. If you are using pyenv-win on Windows, these instructions are most likely not 100% compatible with your setup.
+
 Run the following commands one by one to install keycmd into its own standalone environment:
 
 ```bash
@@ -66,9 +69,9 @@ If you're using WSL, you'll run into a wall when you first try to use keycmd. Th
 If you did actually set up your linux distro's keyring background service, that's fine, you can continue using it and don't need to perform any additional steps.
 
 > **Note**
-> Just because you installed WSL on your system, does not mean you are actually using it. If you are not sure, one way to check is to go through the [Quickstart](#quickstart) steps below and see if you get an error message from keyring telling you that no backend is available.
+> Just because you installed WSL on your system, does not mean you are actually working in WSL. Think about this for a moment; are you using Python from Windows or from WSL? The instructions here are only necessary if you are actually working in WSL.
 
-However, if you would like keyring to connect from the WSL environment to your Windows Credential Manager instead, continue with the next steps.
+So, if you would like keyring to connect from the WSL environment to your Windows Credential Manager instead, continue with the next steps.
 
 You have to install keycmd according to the above instructions (globally, or with pyenv) **in Windows**, not in WSL. Then, assuming `keycmd` is on your Windows `PATH`, it should now be available in WSL as well!
 
