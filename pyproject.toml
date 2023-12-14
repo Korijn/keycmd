@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "keycmd"
-version = "0.6.0"
+version = "0.7.0"
 description = ""
 authors = ["Korijn van Golen <korijn.vangolen@zimmerbiomet.com>"]
 license = "MIT"
