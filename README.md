@@ -171,13 +171,19 @@ Configuration files are loaded and merged in the listed order.
 
 ### Options
 
-The options are a nested dictionary, defined as follows:
+The options schema is defined as follows:
 
 * `keys`: dict
   * `{key_name}`: dict
     * `credential`: str
     * `username`: str
     * `b64`: bool, optional
+    * `format`: str, optional
+* `aliases`: dict
+  * `{alias_name}`: dict
+    * `key`: str
+    * `b64`: bool, optional
+    * `format`: str, optional
 
 You can define as many keys as you like. For each key, you are required to define:
 
@@ -185,7 +191,26 @@ You can define as many keys as you like. For each key, you are required to defin
 * the `credential`, which is the name of the credential in your OS keyring
 * the `username`, which is the name of the user owning the credential in the OS keyring
 
-Optionally, you can also set `b64` to `true` to apply base64 encoding to the credential.
+Optional fields:
+
+* `b64`, set this to `true` to apply base64 encoding to the password
+* `format`, apply a format string (before optionally applying base64 encoding)
+  * you have access to `credential`, `username` and `password`
+  * so for example you can put together a basic auth header like this: `"{username}:{password}"`
+
+The aliases make it possible to expose the same credentials in another way, the fields work the same.
+
+### Example
+
+This configuration exposes a specific credential both plainly under the environment variable `MY_TOKEN`, and again with base64 encoding applied as `MY_TOKEN_B64`:
+
+```toml
+[keys]
+MY_TOKEN = { credential = "MY_TOKEN", username = "azure" }
+
+[aliases]
+MY_TOKEN_B64 = { key = "MY_TOKEN", b64 = true }
+```
 
 ## OpenAI example
 
