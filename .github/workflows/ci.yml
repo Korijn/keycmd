@@ -31,7 +31,6 @@ jobs:
       - name: Lint
         run: |
           poetry run ruff keycmd
-          poetry run black --check keycmd
 
   test:
     name: Test
