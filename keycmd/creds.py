@@ -12,10 +12,15 @@ def b64(value):
 
 
 def expose(env, key, credential, username, password, apply_b64, format_string):
+    if format_string:
+        password = format_string.format(
+            credential=credential,
+            username=username,
+            password=password,
+        )
     if apply_b64:
-        env[key] = b64(password)
-    else:
-        env[key] = password
+        password = b64(password)
+    env[key] = password
 
 
 def get_env(conf):
