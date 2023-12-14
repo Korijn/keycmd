@@ -39,7 +39,11 @@ def get_env(conf):
         apply_b64 = src.get("b64", False)
         format_string = src.get("format")
         key_data[key] = (
-            src["credential"], src["username"], password, apply_b64, format_string,
+            src["credential"],
+            src["username"],
+            password,
+            apply_b64,
+            format_string,
         )
         expose(env, key, *key_data[key])
         vlog(

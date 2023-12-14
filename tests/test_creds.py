@@ -55,7 +55,7 @@ def test_get_env(credentials):
                 "key": "__FOOBAR_B64",
                 "format": "{username}:{password}",
                 "b64": True,
-            }
+            },
         },
     }
     env = get_env(conf)
