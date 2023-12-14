@@ -5,7 +5,6 @@ import tomli
 
 from .logs import vlog
 
-
 # exposed for testing
 USERPROFILE = "~"
 

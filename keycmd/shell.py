@@ -4,10 +4,9 @@ from pprint import pformat
 from subprocess import run
 from sys import exit
 
-from shellingham import detect_shell, ShellDetectionFailure
+from shellingham import ShellDetectionFailure, detect_shell
 
 from .logs import vlog, vwarn
-
 
 USE_SUBPROCESS = False  # exposed for testing
 IS_WINDOWS = os.name == "nt"
@@ -55,9 +54,11 @@ def run_shell(env=None):
 def run_cmd(cmd, env=None):
     """Run a one-off command in a shell."""
     shell_name, shell_path = get_shell()
-    opt = "-c"
     if shell_name == "cmd":
         opt = "/C"
+    else:
+        opt = "-c"
+        cmd = [" ".join(cmd)]
     full_command = [shell_path, opt, *cmd]
     vlog(f"running command: {pformat(full_command)}")
     exec(full_command, env)

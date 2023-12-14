@@ -4,7 +4,7 @@ from shutil import which
 import pytest
 
 import keycmd.shell
-from keycmd.shell import get_shell, run_shell, run_cmd
+from keycmd.shell import get_shell, run_cmd, run_shell
 
 
 @pytest.fixture

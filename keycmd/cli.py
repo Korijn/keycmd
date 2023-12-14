@@ -8,7 +8,6 @@ from .creds import get_env
 from .logs import error, log, set_verbose
 from .shell import run_cmd, run_shell
 
-
 cli = argparse.ArgumentParser(
     prog="keycmd",
 )

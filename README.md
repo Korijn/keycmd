@@ -146,7 +146,7 @@ optional arguments:
 
 There are two main ways to use the CLI:
 
-* `keycmd ...`
+* `keycmd 'your command'`
 * `keycmd --shell`
 
 The first is the most preferred method, since your secrets will only be exposed as environment variables during a one-off command. The latter is less preferable, but can be convenient if you are debugging some process that depends on the credentials you are exposing.
@@ -171,13 +171,19 @@ Configuration files are loaded and merged in the listed order.
 
 ### Options
 
-The options are a nested dictionary, defined as follows:
+The options schema is defined as follows:
 
 * `keys`: dict
   * `{key_name}`: dict
     * `credential`: str
     * `username`: str
     * `b64`: bool, optional
+    * `format`: str, optional
+* `aliases`: dict
+  * `{alias_name}`: dict
+    * `key`: str
+    * `b64`: bool, optional
+    * `format`: str, optional
 
 You can define as many keys as you like. For each key, you are required to define:
 
@@ -185,7 +191,38 @@ You can define as many keys as you like. For each key, you are required to defin
 * the `credential`, which is the name of the credential in your OS keyring
 * the `username`, which is the name of the user owning the credential in the OS keyring
 
-Optionally, you can also set `b64` to `true` to apply base64 encoding to the credential.
+Optional fields:
+
+* `b64`, set this to `true` to apply base64 encoding to the password
+* `format`, apply a format string (before optionally applying base64 encoding)
+  * you have access to `credential`, `username` and `password`
+  * so for example you can put together a basic auth header like this: `"{username}:{password}"`
+
+The aliases make it possible to expose the same credentials in another way, the fields work the same.
+
+### Example
+
+This configuration exposes a specific credential both plainly under the environment variable `MY_TOKEN`, and again with base64 encoding applied as `MY_TOKEN_B64`:
+
+```toml
+[keys]
+MY_TOKEN = { credential = "MY_TOKEN", username = "azure" }
+
+[aliases]
+MY_TOKEN_B64 = { key = "MY_TOKEN", b64 = true }
+```
+
+### pyproject.toml example
+
+You can also store your configuration in `pyproject.toml`, by prefixing the keys with `tool.keycmd`. So if we were to convert the previous example it would look like this:
+
+```toml
+[tool.keycmd.keys]
+MY_TOKEN = { credential = "MY_TOKEN", username = "azure" }
+
+[tool.keycmd.aliases]
+MY_TOKEN_B64 = { key = "MY_TOKEN", b64 = true }
+```
 
 ## OpenAI example
 
@@ -286,7 +323,7 @@ always-auth=true
 //pkgs.dev.azure.com/my_organization/_packaging/main/npm/:email=email
 ```
 
-Now, I can set up my `node_modules` just by calling `keycmd npm install`! 🚀
+Now, I can set up my `node_modules` just by calling `keycmd 'npm install'`! 🚀
 
 > **Note**
 > npm will complain if you make any calls such as `npm run [...]` without the environment variable set. 🙄 You can set them to the empty string to make npm shut up. I use `export PAT_B64=` (or `setx PAT_B64=` on Windows).
@@ -301,12 +338,14 @@ secrets:
     environment: PAT_B64
 ```
 
-When I call `keycmd docker compose build` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/). 👌
+When I call `keycmd 'docker compose build'` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/). 👌
 
 ## Debugging configuration
 
 If you're not getting the results you expected, use the `-v` flag
 to debug your configuration. Keycmd will verbosely tell you about all the steps it's taking.
+
+Here's an example using cmd.exe, otherwise, the command would be `poetry run keycmd -v 'echo $ARTIFACTS_TOKEN_B64'`:
 
 ```
 ❯ poetry run keycmd -v echo %ARTIFACTS_TOKEN_B64%
