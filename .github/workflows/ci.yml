@@ -30,8 +30,10 @@ jobs:
         run: poetry install
       - name: Lint
         run: |
-          poetry run ruff keycmd
-          poetry run black --check keycmd
+          EXIT_STATUS=0
+          poetry run ruff check keycmd || EXIT_STATUS=$?
+          poetry run ruff format --check keycmd || EXIT_STATUS=$?
+          exit $EXIT_STATUS
 
   test:
     name: Test

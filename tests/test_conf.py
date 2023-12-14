@@ -1,17 +1,17 @@
 import os
 from pathlib import Path
 
-import tomli
 import pytest
+import tomli
 
 import keycmd.conf
 from keycmd.conf import (
-    find_file,
-    load_toml,
-    load_pyproj,
     defaults,
-    merge_conf,
+    find_file,
     load_conf,
+    load_pyproj,
+    load_toml,
+    merge_conf,
 )
 
 
@@ -66,7 +66,7 @@ def test_find_file(ch_tmpdir):
     p1 = create_path("../.blabla")
     p2 = create_path("../../.blabla")
     p3 = create_path("../../../.blabla")
-    p4 = create_path("~/.blabla")
+    create_path("~/.blabla")
     assert find_file(".blabla") == p1
     assert find_file(".blabla", first_only=False) == [p3, p2, p1]
     (p2.parent / ".git").mkdir(exist_ok=True, parents=True)

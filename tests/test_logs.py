@@ -2,7 +2,7 @@ from functools import partial
 
 import pytest
 
-from keycmd.logs import set_verbose, log, vlog, error, vwarn
+from keycmd.logs import error, log, set_verbose, vlog, vwarn
 
 
 def test_logging(capsys, request):
