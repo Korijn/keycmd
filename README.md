@@ -212,6 +212,18 @@ MY_TOKEN = { credential = "MY_TOKEN", username = "azure" }
 MY_TOKEN_B64 = { key = "MY_TOKEN", b64 = true }
 ```
 
+### pyproject.toml example
+
+You can also store your configuration in `pyproject.toml`, by prefixing the keys with `tool.keycmd`. So if we were to convert the previous example it would look like this:
+
+```toml
+[tool.keycmd.keys]
+MY_TOKEN = { credential = "MY_TOKEN", username = "azure" }
+
+[tool.keycmd.aliases]
+MY_TOKEN_B64 = { key = "MY_TOKEN", b64 = true }
+```
+
 ## OpenAI example
 
 With OpenAI, you're instructed to [use an API key](https://github.com/openai/openai-python#usage) to authenticate with their APIs. When you put that string in a `.env` file, or directly in your code, you risk sharing your API key with the world! 🙅‍♂️
