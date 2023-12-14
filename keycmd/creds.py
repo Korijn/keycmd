@@ -59,7 +59,7 @@ def get_env(conf):
             error(f"MISSING alias key {src['key']}")
         # re-use base data but replace apply_b64 and format_string
         credential, username, password, _, _ = key
-        apply_b64 = src.get("b64")
+        apply_b64 = src.get("b64", False)
         format_string = src.get("format")
         expose(env, alias, credential, username, password, apply_b64, format_string)
         vlog(
