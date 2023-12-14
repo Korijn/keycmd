@@ -146,7 +146,7 @@ optional arguments:
 
 There are two main ways to use the CLI:
 
-* `keycmd ...`
+* `keycmd 'your command'`
 * `keycmd --shell`
 
 The first is the most preferred method, since your secrets will only be exposed as environment variables during a one-off command. The latter is less preferable, but can be convenient if you are debugging some process that depends on the credentials you are exposing.
@@ -286,7 +286,7 @@ always-auth=true
 //pkgs.dev.azure.com/my_organization/_packaging/main/npm/:email=email
 ```
 
-Now, I can set up my `node_modules` just by calling `keycmd npm install`! 🚀
+Now, I can set up my `node_modules` just by calling `keycmd 'npm install'`! 🚀
 
 > **Note**
 > npm will complain if you make any calls such as `npm run [...]` without the environment variable set. 🙄 You can set them to the empty string to make npm shut up. I use `export PAT_B64=` (or `setx PAT_B64=` on Windows).
@@ -301,12 +301,14 @@ secrets:
     environment: PAT_B64
 ```
 
-When I call `keycmd docker compose build` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/). 👌
+When I call `keycmd 'docker compose build'` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/). 👌
 
 ## Debugging configuration
 
 If you're not getting the results you expected, use the `-v` flag
 to debug your configuration. Keycmd will verbosely tell you about all the steps it's taking.
+
+Here's an example using cmd.exe, otherwise, the command would be `poetry run keycmd -v 'echo $ARTIFACTS_TOKEN_B64'`:
 
 ```
 ❯ poetry run keycmd -v echo %ARTIFACTS_TOKEN_B64%
