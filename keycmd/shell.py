@@ -4,10 +4,9 @@ from pprint import pformat
 from subprocess import run
 from sys import exit
 
-from shellingham import detect_shell, ShellDetectionFailure
+from shellingham import ShellDetectionFailure, detect_shell
 
 from .logs import vlog, vwarn
-
 
 USE_SUBPROCESS = False  # exposed for testing
 IS_WINDOWS = os.name == "nt"

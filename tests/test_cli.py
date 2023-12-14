@@ -1,17 +1,16 @@
 import os
+from functools import cache
 from pathlib import Path
 from subprocess import run
-from functools import cache
 
-import pytest
 import keyring
+import pytest
 
 import keycmd.conf
 import keycmd.shell
-from keycmd.shell import get_shell
 from keycmd import __version__
-from keycmd.cli import main, cli
-
+from keycmd.cli import cli, main
+from keycmd.shell import get_shell
 
 varname = "KEYCMD_TEST"
 key = "__keycmd_testß"
