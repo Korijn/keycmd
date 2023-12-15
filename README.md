@@ -197,7 +197,7 @@ Three variables are available for use in the format string:
 * `username`
 * `password`
 
-So for example you can put together a basic auth header with a configuration string like this: ``
+So for example you can put together a basic auth header with a configuration string like this:
 
 ```toml
 [keys]
