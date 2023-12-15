@@ -169,47 +169,54 @@ Configuration can be stored in three places (where `~` is the user home folder a
 
 Configuration files are loaded and merged in the listed order.
 
-### Options
+### Fields
 
 The options schema is defined as follows:
 
 * `keys`: dict
-  * `{key_name}`: dict
-    * `credential`: str
-    * `username`: str
-    * `b64`: bool, optional
-    * `format`: str, optional
-* `aliases`: dict
-  * `{alias_name}`: dict
-    * `key`: str
-    * `b64`: bool, optional
-    * `format`: str, optional
+  * `{key_name}`: dict - an environment variable will be created with this name
+    * `credential`: str - the name of the credential in your keyring
+    * `username`: str - the username associated with the credential in your keyring
+    * `b64`: bool, optional - set to `true` to apply base64 encoding
+    * `format`: str, optional - apply a format string (applied before base64 encoding)
+* `aliases`: dict, optional
+  * `{alias_name}`: dict - an environment variable will be created with this name
+    * `key`: str - the key that should be aliased
+    * `b64`: bool, optional - see `keys.{key_name}.b64`
+    * `format`: str, optional - see `keys.{key_name}.format`
 
-You can define as many keys as you like. For each key, you are required to define:
+### Format strings
 
-* the `key_name`, which is the name of the environment variable under which the credential will be exposed
-* the `credential`, which is the name of the credential in your OS keyring
-* the `username`, which is the name of the user owning the credential in the OS keyring
+The format string allows you to preprocess the credential before it is exposed as an environment variable.
 
-Optional fields:
+The format string is processed using Python's built-in [`str.format`](https://docs.python.org/3/library/stdtypes.html#str.format) so you have access to all formatting functionality supported by that function.
 
-* `b64`, set this to `true` to apply base64 encoding to the password
-* `format`, apply a format string (before optionally applying base64 encoding)
-  * you have access to `credential`, `username` and `password`
-  * so for example you can put together a basic auth header like this: `"{username}:{password}"`
+Three variables are available for use in the format string:
 
-The aliases make it possible to expose the same credentials in another way, the fields work the same.
+* `credential`
+* `username`
+* `password`
 
-### Example
-
-This configuration exposes a specific credential both plainly under the environment variable `MY_TOKEN`, and again with base64 encoding applied as `MY_TOKEN_B64`:
+So for example you can put together a basic auth header with a configuration string like this: ``
 
 ```toml
 [keys]
-MY_TOKEN = { credential = "MY_TOKEN", username = "azure" }
+MY_TOKEN = { credential = "MY_TOKEN", username = "azure", format = "{username}:{password}", b64 = true }
+```
+
+### Aliases
+
+Aliases can be used to expose the same secret in multiple forms.
+
+For example, you may have a single Personal Access Token for Azure DevOps, and wish to use the same token for `pip`, `npm` and the REST API. `pip` wants you to provide the token in plain text, `npm` prefers it to be base64-encoded and the REST API is expecting a basic auth header. Aliases make this easy:
+
+```toml
+[keys]
+MY_TOKEN = { credential = "azure_secret", username = "azure" }
 
 [aliases]
 MY_TOKEN_B64 = { key = "MY_TOKEN", b64 = true }
+MY_TOKEN_BASICAUTH = { key = "MY_TOKEN", format = "{username}:{password}", b64 = true }
 ```
 
 ### pyproject.toml example
@@ -218,10 +225,11 @@ You can also store your configuration in `pyproject.toml`, by prefixing the keys
 
 ```toml
 [tool.keycmd.keys]
-MY_TOKEN = { credential = "MY_TOKEN", username = "azure" }
+MY_TOKEN = { credential = "azure_secret", username = "azure" }
 
 [tool.keycmd.aliases]
 MY_TOKEN_B64 = { key = "MY_TOKEN", b64 = true }
+MY_TOKEN_BASICAUTH = { key = "MY_TOKEN", format = "{username}:{password}", b64 = true }
 ```
 
 ## OpenAI example
