@@ -93,20 +93,31 @@ Let's add a new key to our OS keyring, and then see how we can expose it with ke
 
 For the purpose of this example, use `my-secret` as the credential name and `my-username` as the... username. I used `foobar` as the password.
 
+### Windows
 On Windows, that means clicking Start and typing "Credential Manager" to find the app. Click the Windows Credentials tab, and click "Add a generic credential". See the screenshots below.
 
 ![Credential Manager](docs/wcm.png)
 
 ![Add Key](docs/wcm-add-key.png)
 
+### MacOS
 On macOS, open Keychain Access (Command-Space bar, type `keychain access`), then press Command-N to add a 
 new password item. Please note that Account Name holds the username.
 
 ![Add New Password Item](docs/keychain-access-new-password-item.png)
 
-> **Note**
-> Pull requests to add visual guides for linux keyrings are most welcome!
+### Linux
+On Linux, the easiest way to add a credential is via python's `keyring` package. Manually adding a password via the GUI does not always allow you to set a username, which is problematic with `keycmd`'s internal `keyring.get_password()` call. Here an example of setting a password:
 
+```python
+>>> import keyring
+>>> keyring.set_password("example_password_name", "username", "password")
+```
+
+after which it appears in the credential manager. This approach should generalize for other distributions (and even other OS's). On Ubuntu `seahorse` is used, which now should show the new password:
+![Seahorse](docs/seahorse.png)
+
+### Configuration
 Now, create a `.keycmd` config file in your user home folder. Put the following configuration in the file and save:
 
 ```toml
