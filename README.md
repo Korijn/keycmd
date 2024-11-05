@@ -111,7 +111,7 @@ On Linux, the easiest way to add a credential is via python's `keyring` package.
 
 ```python
 >>> import keyring
->>> keyring.set_password("example_password_name", "username", "password")
+>>> keyring.set_password("my-secret", "my-username", "foobar")
 ```
 
 after which it appears in the credential manager. This approach should generalize for other distributions (and even other OS's). On Ubuntu `seahorse` is used, which now should show the new password:
