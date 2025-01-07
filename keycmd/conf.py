@@ -15,7 +15,7 @@ def load_toml(path):
         try:
             return tomli.load(fh)
         except tomli.TOMLDecodeError as err:
-            raise tomli.TOMLDecodeError(f"invalid TOML in {path}:\n{err}")
+            raise tomli.TOMLDecodeError(f"invalid TOML in {path}:\n{err}") from err
 
 
 def load_pyproj(path):
