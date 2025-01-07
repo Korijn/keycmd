@@ -30,14 +30,14 @@ def get_shell():
     this Python process"""
     try:
         shell_name, shell_path = detect_shell(os.getpid())
-    except ShellDetectionFailure:
+    except ShellDetectionFailure as err:
         vwarn("failed to detect parent process shell, falling back to system default")
         if IS_POSIX:
             shell_path = os.environ["SHELL"]
         elif IS_WINDOWS:
             shell_path = os.environ["COMSPEC"]
         else:
-            raise NotImplementedError(f"os {os.name} support not available")
+            raise NotImplementedError(f"os {os.name} support not available") from err
         shell_name = Path(shell_path).name.lower()
     vlog(f"detected shell: {shell_path}")
     return shell_name, shell_path
