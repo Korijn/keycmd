@@ -44,10 +44,13 @@ def test_run_cmd_env(capfd, subprocess):
     name, _ = get_shell()
     if name == "cmd":
         var = r"%KEYCMD_TEST_FOOBAR%"
+        expected_without_env = var
     elif name in {"pwsh", "powershell"}:
         var = "$env:KEYCMD_TEST_FOOBAR"
+        expected_without_env = ""
     else:
         var = "$KEYCMD_TEST_FOOBAR"
+        expected_without_env = ""
 
     with pytest.raises(SystemExit) as exc_info:
         run_cmd(["echo", var], env=env)
@@ -57,4 +60,4 @@ def test_run_cmd_env(capfd, subprocess):
     with pytest.raises(SystemExit) as exc_info:
         run_cmd(["echo", var])
     assert exc_info.value.args[0] == 0
-    assert capfd.readouterr().out.strip() == var
+    assert capfd.readouterr().out.strip() == expected_without_env
