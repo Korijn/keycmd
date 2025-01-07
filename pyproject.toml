@@ -17,9 +17,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ruff~=0.1.8",
-    "twine~=4.0.2",
-    "pytest~=7.4.3"
+    "ruff",
+    "twine",
+    "pytest",
+    "pytest-cov"
 ]
 
 [project.scripts]
