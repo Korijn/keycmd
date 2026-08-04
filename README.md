@@ -443,6 +443,8 @@ The tests that read and write credentials need a real OS keyring that can be unl
   '
   ```
 
+There is no separate WSL job, because there is nothing WSL specific in keycmd to test. Inside WSL keycmd is a posix process like any other, talking to whichever keyring backend the distro provides, which is what the Linux job covers, keyring daemon and all. The other half of the [WSL story](#wsl-installation), calling the Windows install of keycmd from a WSL shell, runs keycmd as a Windows process against the credential manager, which is what the Windows job covers. Shell detection is the one thing that behaves differently there: shellingham cannot see across the interop boundary, so keycmd falls back to `%COMSPEC%`, which is covered by `test_get_shell_windows_fallback`.
+
 If you would rather not involve your OS keyring at all, point keyring at a file-based backend:
 
 ```bash
