@@ -44,8 +44,10 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
-      - name: Install only ty
-        run: uv sync --only-group ty
+      # ty needs the runtime dependencies installed to resolve their
+      # imports, so this installs the project itself, unlike the lint job
+      - name: Install ty and runtime dependencies
+        run: uv sync --no-default-groups --group ty
       - name: Typecheck
         run: uv run --no-sync ty check --output-format=github --error-on-warning
 
