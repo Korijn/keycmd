@@ -1,6 +1,7 @@
 [project]
 name = "keycmd"
-version = "0.7.0"
+# the version lives in keycmd/__init__.py, see [tool.hatch.version]
+dynamic = ["version"]
 description = "Safely source your secrets and credentials from the OS keyring"
 authors = [{ name = "Korijn van Golen", email = "korijn@gmail.com" }]
 requires-python = ">=3.13"
@@ -37,6 +38,9 @@ default-groups = ["dev"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "keycmd/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = ["keycmd", "tests", "README.md", "LICENSE", "pyproject.toml"]
