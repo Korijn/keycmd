@@ -40,8 +40,11 @@ def wsl_bash(script):
 
 def wsl_path(path):
     """Translate a Windows path into the path WSL knows it by"""
-    p = wsl("wslpath", "-a", str(path))
-    assert p.returncode == 0, decode(p.stderr)
+    # wslpath takes forward slashes too, and unlike backslashes they
+    # survive the trip through wsl.exe's command line
+    windows_path = str(path).replace("\\", "/")
+    p = wsl("wslpath", "-a", windows_path)
+    assert p.returncode == 0, f"{windows_path}: {decode(p.stderr)}"
     return decode(p.stdout).strip()
 
 
@@ -71,15 +74,14 @@ def test_credential_manager_from_wsl(
 ):
     """A credential stored on Windows reaches a command run from WSL"""
     var = local_conf.varname
-    script = "\n".join(
-        [
-            # the config is picked up from the working directory, which
-            # crosses the boundary as a windows path
-            f"cd '{wsl_path(ch_tmpdir)}'",
-            # both dialects, so that the assertion does not depend on which
-            # shell keycmd detects on the windows side of the boundary
-            f"'{keycmd_exe}' --verbose echo '%{var}%' '$env:{var}'",
-        ]
+    # one line, so the script survives the trip through wsl.exe intact:
+    # the config is picked up from the working directory, which crosses the
+    # boundary as a windows path, and the variable is spelled in both
+    # dialects, so that the assertion does not depend on which shell keycmd
+    # detects on the windows side of the boundary
+    script = (
+        f"cd '{wsl_path(ch_tmpdir)}'; "
+        f"'{keycmd_exe}' --verbose echo '%{var}%' '$env:{var}'"
     )
     p = wsl_bash(script)
     output = f"{decode(p.stdout)}\n{decode(p.stderr)}"
