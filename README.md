@@ -83,7 +83,7 @@ So, if you would like keyring to connect from the WSL environment to your Window
 
 You have to install keycmd according to the above instructions (globally, or with pyenv) **in Windows**, not in WSL. Then, assuming `keycmd` is on your Windows `PATH`, it should now be available in WSL as well!
 
-Keep in mind that keycmd is a Windows process in this setup, so left to its own devices it would run your command in a Windows shell, and `keycmd --shell` would open one. It doesn't: when keycmd notices it was called from a distro, it runs your command back inside that distro through `wsl.exe`, and `keycmd --shell` opens a shell there.
+Keep in mind that keycmd is a Windows process in this setup, so left to its own devices it would run your command in a Windows shell, and `keycmd --shell` would open one. It doesn't: when keycmd notices it was called from a distro, it runs your command back inside that distro through `wsl.exe`, and `keycmd --shell` opens a shell there. If you have more than one distro installed, and you are working somewhere on the distro's own file system, keycmd targets the distro you are in rather than the default one.
 
 Your credentials do not come along by themselves, since neither side of the WSL boundary inherits the other's environment. Only the variables listed in [`WSLENV`](https://devblogs.microsoft.com/commandline/share-environment-vars-between-wsl-and-windows/) make the trip, so keycmd adds the variables from your configuration to it.
 

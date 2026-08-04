@@ -111,11 +111,25 @@ def from_wsl() -> bool:
     # a distribution's file system is reachable over UNC, so a windows
     # process called from one has its working directory there, unless the
     # distribution was sitting in a windows folder to begin with
-    cwd = os.getcwd()
-    if cwd.lower().startswith(WSL_ROOTS):
-        vlog(f"called from WSL, working directory {cwd}")
+    name = distro()
+    if name is not None:
+        vlog(f"called from WSL, working directory in {name}")
         return True
     return False
+
+
+def distro() -> str | None:
+    """The distribution the working directory is in, if it is in one
+
+    Which is the one the user is typing in, and not necessarily the
+    default one wsl.exe would otherwise pick.
+    """
+    cwd = os.getcwd()
+    if not cwd.lower().startswith(WSL_ROOTS):
+        return None
+    # the root and the distribution name together form what windows
+    # considers the drive of a UNC path
+    return PureWindowsPath(cwd).drive.rpartition("\\")[2] or None
 
 
 def in_distro() -> bool:
@@ -139,9 +153,21 @@ def share_env(env: dict[str, str], names: Iterable[str]) -> None:
         vlog(f"sharing with WSL as WSLENV={env['WSLENV']}")
 
 
+def wsl_argv() -> list[str]:
+    """Start of a command line for the distribution keycmd was called from
+
+    wsl.exe runs the default distribution unless it is told otherwise,
+    which is the wrong one as soon as a machine has more than one.
+    """
+    name = distro()
+    if name is None:
+        return [WSL]
+    return [WSL, "--distribution", name]
+
+
 def shell_argv() -> list[str]:
     """Command line that opens an interactive shell in the distribution"""
-    return [WSL]
+    return wsl_argv()
 
 
 def cmd_argv(cmd: Sequence[str]) -> list[str]:
@@ -151,4 +177,4 @@ def cmd_argv(cmd: Sequence[str]) -> list[str]:
     distribution, which makes this the counterpart of the -c that run_cmd
     hands to a shell on either platform.
     """
-    return [WSL, "--", *cmd]
+    return [*wsl_argv(), "--", *cmd]

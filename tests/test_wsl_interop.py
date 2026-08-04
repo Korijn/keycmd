@@ -19,6 +19,7 @@ from keycmd.wsl import (
     OVERRIDE,
     ancestors,
     cmd_argv,
+    distro,
     from_wsl,
     image_name,
     in_distro,
@@ -210,6 +211,30 @@ def test_share_env_verbose(capsys, windows, verbose):
     assert "sharing with WSL as WSLENV=FOO" in capsys.readouterr().out
 
 
+def test_distro(cwd):
+    cwd("\\\\wsl.localhost\\Ubuntu-22.04\\home\\someone")
+    assert distro() == "Ubuntu-22.04"
+    cwd("\\\\WSL$\\Debian\\")
+    assert distro() == "Debian"
+    cwd("C:\\Users\\someone")
+    assert distro() is None
+
+
 def test_argv():
+    """Without a distribution to name, wsl.exe picks the default one"""
     assert shell_argv() == ["wsl.exe"]
     assert cmd_argv(["echo", "foo"]) == ["wsl.exe", "--", "echo", "foo"]
+
+
+def test_argv_names_the_distro(cwd):
+    """The one the user is typing in, which need not be the default one"""
+    cwd("\\\\wsl.localhost\\Debian\\home\\someone\\project")
+    assert shell_argv() == ["wsl.exe", "--distribution", "Debian"]
+    assert cmd_argv(["echo", "foo"]) == [
+        "wsl.exe",
+        "--distribution",
+        "Debian",
+        "--",
+        "echo",
+        "foo",
+    ]
