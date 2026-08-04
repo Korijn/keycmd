@@ -59,24 +59,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Linux py313
-            os: ubuntu-latest
-            pyversion: "3.13"
+          # every platform on the latest python, plus a single job on the
+          # oldest supported one to catch anything newer than it allows
           - name: Linux py314
             os: ubuntu-latest
             pyversion: "3.14"
-          - name: macOS py313
-            os: macos-latest
-            pyversion: "3.13"
           - name: macOS py314
             os: macos-latest
             pyversion: "3.14"
-          - name: Windows py313
-            os: windows-latest
-            pyversion: "3.13"
           - name: Windows py314
             os: windows-latest
             pyversion: "3.14"
+          - name: Linux py313
+            os: ubuntu-latest
+            pyversion: "3.13"
     env:
       # the test suite exercises a real OS keyring; this makes it fail
       # instead of skipping those tests if the setup below breaks
@@ -139,13 +135,13 @@ jobs:
       KEYCMD_TEST_WSL: "1"
     steps:
       - uses: actions/checkout@v7
-      - name: Install uv and Python 3.13
+      - name: Install uv and Python 3.14
         uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
-          python-version: "3.13"
+          python-version: "3.14"
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
-          cache-suffix: py3.13
+          cache-suffix: py3.14
       - name: Install dependencies
         run: uv sync
       # WSL only provides the shell keycmd is invoked from; keycmd itself
