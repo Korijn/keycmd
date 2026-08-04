@@ -54,7 +54,11 @@ def wsl_path(path):
     drive = path.drive
     assert drive.endswith(":"), f"not an absolute windows path: {path}"
     rest = path.as_posix()[len(drive) :].lstrip("/")
-    return f"/mnt/{drive[0].lower()}/{rest}"
+    translated = f"/mnt/{drive[0].lower()}/{rest}"
+    # quotes are stripped from wsl.exe's command line before the distribution
+    # ever sees them, so a path with spaces cannot be passed through it
+    assert " " not in translated, f"path with spaces: {translated}"
+    return translated
 
 
 @pytest.fixture(scope="session")
@@ -69,14 +73,14 @@ def test_wsl_reads_windows_paths(tmp_path):
     """WSL is reachable, and it sees the Windows file system where expected"""
     marker = tmp_path / "marker"
     marker.write_text("hello from windows", encoding="utf-8")
-    p = wsl_sh(f"cat '{wsl_path(marker)}'")
+    p = wsl_sh(f"cat {wsl_path(marker)}")
     assert p.returncode == 0, decode(p.stderr)
     assert decode(p.stdout).strip() == "hello from windows"
 
 
 def test_version_from_wsl(keycmd_exe):
     """The Windows install runs when it is invoked from a WSL shell"""
-    p = wsl_sh(f"'{keycmd_exe}' --version")
+    p = wsl_sh(f"{keycmd_exe} --version")
     assert p.returncode == 0, decode(p.stderr)
     assert decode(p.stdout).strip().startswith("keycmd: v")
 
@@ -86,17 +90,15 @@ def test_credential_manager_from_wsl(
 ):
     """A credential stored on Windows reaches a command run from WSL"""
     var = local_conf.varname
-    # one line, so the script survives the trip through wsl.exe intact:
-    # the config is picked up from the working directory, which crosses the
-    # boundary as a windows path, and the variable is spelled in both
-    # dialects, so that the assertion does not depend on which shell keycmd
-    # detects on the windows side of the boundary
-    script = (
-        f"cd '{wsl_path(ch_tmpdir)}'; "
-        f"'{keycmd_exe}' --verbose echo '%{var}%' '$env:{var}'"
-    )
+    # one line and free of quotes, so that the script survives the trip
+    # through wsl.exe intact; the config is picked up from the working
+    # directory, which crosses the boundary as a windows path, and printing
+    # the environment with cmd works whichever shell keycmd ends up
+    # detecting on the windows side, where %VAR% and $env:VAR each only
+    # work in one of them
+    script = f"cd {wsl_path(ch_tmpdir)}; {keycmd_exe} --verbose cmd /c set"
     p = wsl_sh(script)
     output = f"{decode(p.stdout)}\n{decode(p.stderr)}"
     assert p.returncode == 0, output
     assert f"as environment variable {var}" in output
-    assert shell_credentials.password in output
+    assert f"{var}={shell_credentials.password}" in output
