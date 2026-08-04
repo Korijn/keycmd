@@ -40,7 +40,12 @@ def load_toml(path: Path) -> dict[str, Any]:
         try:
             return tomllib.load(fh)
         except tomllib.TOMLDecodeError as err:
-            raise tomllib.TOMLDecodeError(f"invalid TOML in {path}:\n{err}") from err
+            # name the offending file in the error, by rewriting the message
+            # of the original rather than raising a new one: the single
+            # argument constructor is deprecated as of python 3.14, and the
+            # structured one that replaces it does not exist before it
+            err.args = (f"invalid TOML in {path}:\n{err}",)
+            raise
 
 
 def load_pyproj(path: Path) -> dict[str, Any]:
