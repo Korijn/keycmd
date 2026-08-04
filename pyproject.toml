@@ -84,6 +84,9 @@ python-version = "3.13"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# deprecations are the way python announces what will break in a release
+# or two, so treat them as the failures they are about to become
+filterwarnings = ["error"]
 
 # example config for development and testing
 [tool.keycmd.keys]
