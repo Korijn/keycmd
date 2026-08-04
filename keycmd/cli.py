@@ -1,6 +1,5 @@
 import argparse
-
-import tomli
+import tomllib
 
 from . import __version__
 from .conf import load_conf
@@ -43,7 +42,7 @@ def main(args=None):
 
     try:
         conf = load_conf()
-    except tomli.TOMLDecodeError as err:
+    except tomllib.TOMLDecodeError as err:
         error(err)
     env = get_env(conf)
 

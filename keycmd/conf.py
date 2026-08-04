@@ -1,7 +1,6 @@
+import tomllib
 from pathlib import Path
 from pprint import pformat
-
-import tomli
 
 from .logs import vlog
 
@@ -13,9 +12,9 @@ def load_toml(path):
     """Load a toml file"""
     with path.open("rb") as fh:
         try:
-            return tomli.load(fh)
-        except tomli.TOMLDecodeError as err:
-            raise tomli.TOMLDecodeError(f"invalid TOML in {path}:\n{err}") from err
+            return tomllib.load(fh)
+        except tomllib.TOMLDecodeError as err:
+            raise tomllib.TOMLDecodeError(f"invalid TOML in {path}:\n{err}") from err
 
 
 def load_pyproj(path):

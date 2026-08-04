@@ -1,4 +1,5 @@
 import sys
+from typing import NoReturn
 
 _verbose = False
 
@@ -21,7 +22,7 @@ def vlog(msg):
         print(f"keycmd: {msg}")
 
 
-def error(msg):
+def error(msg) -> NoReturn:
     log(f"error: {msg}", err=True)
     sys.exit(1)
 
