@@ -1,80 +1,7 @@
-import os
-from functools import cache
-from pathlib import Path
-from subprocess import run
-
-import keyring
 import pytest
 
-import keycmd.conf
-import keycmd.shell
 from keycmd import __version__
 from keycmd.cli import cli, main
-from keycmd.shell import get_shell
-
-varname = "KEYCMD_TEST"
-key = "__keycmd_testß"
-username = "usernameß"
-# TODO: figure out how to simulate pytest capfd encoding on CI
-password = "password"
-
-
-@pytest.fixture
-def subprocess(monkeypatch):
-    monkeypatch.setattr(keycmd.shell, "USE_SUBPROCESS", True)
-    yield
-
-
-@pytest.fixture
-def credentials():
-    keyring.set_password(key, username, password)
-    yield
-    keyring.delete_password(key, username)
-
-
-@pytest.fixture
-def ch_tmpdir(tmpdir):
-    cwd = Path.cwd()
-    os.chdir(tmpdir)
-    yield tmpdir
-    os.chdir(cwd)
-
-
-@pytest.fixture
-def userprofile(tmpdir, monkeypatch):
-    user_dir = Path(tmpdir) / ".user"
-    user_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(keycmd.conf, "USERPROFILE", user_dir)
-    yield user_dir
-
-
-@pytest.fixture
-def local_conf(ch_tmpdir):
-    Path(".keycmd").write_text(
-        """[keys]
-{varname} = {{ credential = "{key}", username = "{username}" }}
-""".format(
-            varname=varname,
-            key=key,
-            username=username,
-        ),
-        encoding="utf-8",
-    )
-
-
-@cache
-def get_encoding_stdin():
-    shell_name, _ = get_shell()
-    opt = "-c"
-    if shell_name == "cmd":
-        opt = "/C"
-    p = run(
-        [shell_name, opt, "python", "-c", "import sys; print(sys.stdin.encoding)"],
-        shell=False,
-        capture_output=True,
-        check=True,
-    )
-    return p.stdout.decode("utf-8").strip()
 
 
 def test_cli_version(capfd):
@@ -82,24 +9,50 @@ def test_cli_version(capfd):
     assert capfd.readouterr().out.strip() == f"keycmd: v{__version__}"
 
 
-def test_cli(capfd, ch_tmpdir, credentials, local_conf, userprofile, subprocess):
-    name, _ = get_shell()
-    if name == "cmd":
-        var = f"%{varname}%"
-    elif name in {"pwsh", "powershell"}:
-        var = f"$env:{varname}"
-    else:
-        var = f"${varname}"
+def test_cli(capfd, shell_credentials, local_conf, userprofile, subprocess, shell):
+    var = shell.env_var(local_conf.varname)
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as exc_info:
         main(["echo", var])
-    assert capfd.readouterr().out.strip() == password
+    assert exc_info.value.args[0] == 0
+    assert capfd.readouterr().out.strip() == shell_credentials.password
 
 
-def test_cli_missing_credential(capfd, ch_tmpdir, local_conf, userprofile, subprocess):
+def test_cli_shell(shell_credentials, local_conf, userprofile, subprocess):
+    """--shell spawns a subshell instead of running a command"""
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--shell"])
+    assert exc_info.value.args[0] == 0
+
+
+def test_cli_verbose(capfd, shell_credentials, local_conf, userprofile, subprocess):
+    with pytest.raises(SystemExit):
+        main(["--verbose", "echo", "foo"])
+    out = capfd.readouterr().out
+    assert f"loading config file {local_conf.path}" in out
+    assert f"as environment variable {local_conf.varname}" in out
+
+
+def test_cli_missing_credential(capfd, local_conf, userprofile, subprocess, os_keyring):
     with pytest.raises(SystemExit) as exc_info:
         main(["echo", "foo"])
     assert exc_info.value.args[0] == 1
+    assert "MISSING credential" in capfd.readouterr().err
+
+
+def test_cli_missing_command(capfd, ch_tmpdir, userprofile):
+    with pytest.raises(SystemExit) as exc_info:
+        main([])
+    assert exc_info.value.args[0] == 1
+    assert "missing command argument" in capfd.readouterr().err
+
+
+def test_cli_invalid_conf(capfd, ch_tmpdir, userprofile):
+    (ch_tmpdir / ".keycmd").write_text("[keys}", encoding="utf-8")
+    with pytest.raises(SystemExit) as exc_info:
+        main(["echo", "foo"])
+    assert exc_info.value.args[0] == 1
+    assert "invalid TOML in" in capfd.readouterr().err
 
 
 def test_cli_extra_args():

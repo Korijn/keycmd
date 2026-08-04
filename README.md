@@ -417,7 +417,33 @@ uv run ty check
 uv run pytest tests
 ```
 
-Note that the test suite exercises a real OS keyring, so it needs a keyring backend that can be unlocked without user interaction. On Windows that works out of the box, which is why CI runs the tests there. On other platforms you can point keyring at a file-based backend instead:
+### Testing
+
+CI runs the test suite on Windows, macOS and Linux, on every supported Python version. The suite adapts to the platform it runs on: it exercises every shell of the platform that is installed (`sh`, `bash` and `zsh` on posix, `cmd`, `powershell` and `pwsh` on Windows), and it skips the process replacement tests on Windows, which has no `execvpe`.
+
+The tests that read and write credentials need a real OS keyring that can be unlocked without user interaction. They are skipped with a message if there is no such keyring, so the rest of the suite still runs. Set `KEYCMD_REQUIRE_OS_KEYRING=1` to turn those skips into failures instead; CI sets it so that a broken keyring setup can't quietly reduce the coverage of a run.
+
+* **Windows**: the credential manager is available to your session out of the box, no setup needed.
+* **macOS**: your login keychain works as long as it is unlocked. CI instead creates a throwaway keychain and makes it the default:
+
+  ```bash
+  security create-keychain -p keycmd-test keycmd-test.keychain
+  security set-keychain-settings keycmd-test.keychain
+  security unlock-keychain -p keycmd-test keycmd-test.keychain
+  security list-keychains -d user -s keycmd-test.keychain login.keychain
+  security default-keychain -s keycmd-test.keychain
+  ```
+
+* **Linux**: the secret service is bound to a d-bus session, so the tests have to run inside one, with an unlocked keyring daemon (install `gnome-keyring` and `dbus-x11` first):
+
+  ```bash
+  dbus-run-session -- bash -c '
+    printf "%s" keycmd-test | gnome-keyring-daemon --unlock --components=secrets
+    uv run pytest tests
+  '
+  ```
+
+If you would rather not involve your OS keyring at all, point keyring at a file-based backend:
 
 ```bash
 uv run --with keyrings.alt pytest tests

@@ -54,18 +54,35 @@ jobs:
   test:
     name: Test on ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         include:
-          # the test suite exercises a real OS keyring, which is only
-          # available unattended on Windows runners
+          - name: Linux py313
+            os: ubuntu-latest
+            pyversion: "3.13"
+          - name: Linux py314
+            os: ubuntu-latest
+            pyversion: "3.14"
+          - name: macOS py313
+            os: macos-latest
+            pyversion: "3.13"
+          - name: macOS py314
+            os: macos-latest
+            pyversion: "3.14"
           - name: Windows py313
             os: windows-latest
             pyversion: "3.13"
           - name: Windows py314
             os: windows-latest
             pyversion: "3.14"
+    env:
+      # the test suite exercises a real OS keyring; this makes it fail
+      # instead of skipping those tests if the setup below breaks
+      KEYCMD_REQUIRE_OS_KEYRING: "1"
+      # the keyrings created below only ever hold test credentials
+      KEYCMD_KEYRING_PASSWORD: keycmd-test
     steps:
       - uses: actions/checkout@v7
       - name: Install uv and Python ${{ matrix.pyversion }}
@@ -77,8 +94,41 @@ jobs:
           cache-suffix: py${{ matrix.pyversion }}
       - name: Install dependencies
         run: uv sync
+      # windows runners expose the credential manager to the session out of
+      # the box; the other two need a keyring that unlocks without a prompt
+      - name: Install gnome-keyring
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends gnome-keyring dbus-x11
+      - name: Create a keychain
+        if: runner.os == 'macOS'
+        run: |
+          security create-keychain -p "$KEYCMD_KEYRING_PASSWORD" "$KEYCHAIN"
+          # no auto lock, neither on a timeout nor on sleep
+          security set-keychain-settings "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCMD_KEYRING_PASSWORD" "$KEYCHAIN"
+          # the keyring package talks to the default keychain
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain
+          security default-keychain -s "$KEYCHAIN"
+        env:
+          KEYCHAIN: keycmd-test.keychain
+      # the secret service is bound to a d-bus session, so the tests have to
+      # run inside one, with the keyring daemon unlocked and running in it
+      - name: Test in a d-bus session
+        if: runner.os == 'Linux'
+        run: |
+          dbus-run-session -- bash -c '
+            printf "%s" "$KEYCMD_KEYRING_PASSWORD" |
+              gnome-keyring-daemon --unlock --components=secrets
+            uv run --no-sync pytest -v --cov=keycmd --cov-report=term-missing \
+              --cov-fail-under=95 tests
+          '
       - name: Test
-        run: uv run --no-sync pytest -v --cov=keycmd --cov-report=term-missing tests
+        if: runner.os != 'Linux'
+        run: >
+          uv run --no-sync pytest -v --cov=keycmd --cov-report=term-missing
+          --cov-fail-under=95 tests
 
   build:
     name: Build and test wheel
