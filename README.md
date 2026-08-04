@@ -176,6 +176,17 @@ There are two main ways to use the CLI:
 
 The first is the most preferred method, since your secrets will only be exposed as environment variables during a one-off command. The latter is less preferable, but can be convenient if you are debugging some process that depends on the credentials you are exposing.
 
+Quoting the whole command as one argument is what lets you use your shell's syntax inside it, as in `keycmd 'echo $SECRET | tr a-z A-Z'`: keycmd hands that line to your shell exactly as you typed it, and your shell does the rest.
+
+You can also write the command out as separate arguments, and then keycmd keeps them separate:
+
+```bash
+# arrives as a single argument, spaces and all
+keycmd mytool --message 'hello world'
+```
+
+Since each argument is passed on as the word it was, your shell's syntax is *not* interpreted a second time in this form. If you want `$SECRET` expanded, either let your own shell expand it, or use the single argument form above.
+
 ## Configuration
 
 > **Note**

@@ -1,4 +1,5 @@
 import os
+import shlex
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from sys import exit
@@ -12,6 +13,9 @@ from .wsl import cmd_argv, from_wsl, shell_argv
 USE_SUBPROCESS: bool = False  # exposed for testing
 IS_WINDOWS: bool = os.name == "nt"
 IS_POSIX: bool = os.name == "posix"
+
+# shells that take -c, but do not quote the way a posix shell does
+POWERSHELL: frozenset[str] = frozenset({"powershell", "pwsh"})
 
 
 def exec(args: list[str], env: Mapping[str, str] | None = None) -> NoReturn:
@@ -51,6 +55,39 @@ def get_shell() -> tuple[str, str]:
     return shell_name, shell_path
 
 
+def quote(shell_name: str, arg: str) -> str:
+    """Quote one argument so that a shell hands it on as a single word"""
+    quoted = shlex.quote(arg)
+    if shell_name not in POWERSHELL or quoted == arg:
+        # a posix shell, or an argument that needs no quoting in any shell
+        return quoted
+    # where a posix shell ends a single quoted string to spell a quote,
+    # powershell doubles the quote and stays inside the string
+    return "'" + arg.replace("'", "''") + "'"
+
+
+def join_cmd(shell_name: str, cmd: Sequence[str]) -> str:
+    """Turn a command into the single string a shell takes after -c
+
+    One argument is a command line already. `keycmd 'echo $SECRET'` is the
+    form the README recommends, and the shell is there precisely to
+    interpret it, so it is handed over as typed.
+
+    Several arguments are an argv vector, and joining them raw would feed
+    their contents back to the shell to be split into words a second time.
+    Quoting each one is what keeps `keycmd mytool 'hello world'` a single
+    argument by the time mytool sees it.
+    """
+    if len(cmd) == 1:
+        return cmd[0]
+    quoted = [quote(shell_name, arg) for arg in cmd]
+    if shell_name in POWERSHELL and quoted[0] != cmd[0]:
+        # powershell reads a quoted command name as a string to print, and
+        # needs the call operator to run it instead
+        quoted.insert(0, "&")
+    return " ".join(quoted)
+
+
 def run_shell(env: Mapping[str, str] | None = None) -> NoReturn:
     """Open an interactive shell for the user to interact
     with."""
@@ -76,7 +113,7 @@ def run_cmd(cmd: Sequence[str], env: Mapping[str, str] | None = None) -> NoRetur
             opt = "/C"
         else:
             opt = "-c"
-            cmd = [" ".join(cmd)]
+            cmd = [join_cmd(shell_name, cmd)]
         full_command = [shell_path, opt, *cmd]
     vlog_pretty("running command: ", full_command)
     exec(full_command, env)

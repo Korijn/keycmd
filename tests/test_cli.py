@@ -19,10 +19,12 @@ def test_cli_version(capfd):
 
 
 def test_cli(capfd, shell_credentials, local_conf, userprofile, subprocess, shell):
+    # one argument, the form the README recommends, so that the shell
+    # keycmd hands the command line to is the one that expands the variable
     var = shell.env_var(local_conf.varname)
 
     with pytest.raises(SystemExit) as exc_info:
-        main(["echo", var])
+        main([f"echo {var}"])
     assert exc_info.value.args[0] == 0
     assert capfd.readouterr().out.strip() == shell_credentials.password
 
