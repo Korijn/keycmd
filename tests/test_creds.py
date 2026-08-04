@@ -2,6 +2,7 @@ from os import environ
 
 import pytest
 
+import keycmd.wsl
 from keycmd.creds import b64, expose, get_env
 
 
@@ -78,6 +79,19 @@ def test_get_env(credentials):
     assert env.get("__FOOBAR_BASICAUTH_ALIAS2") == b64(f"{username}:{password}")
     assert set(environ.keys()).intersection(set(env.keys())) == set(environ.keys())
     assert set(environ.keys()).symmetric_difference(set(env.keys())) == set(all_keys)
+
+
+def test_get_env_shares_with_wsl(monkeypatch, credentials):
+    """Windows keycmd lets the credentials cross into a distribution
+
+    The environment is not inherited across the boundary; only what is
+    named in WSLENV is.
+    """
+    monkeypatch.setattr(keycmd.wsl, "IS_WINDOWS", True)
+    conf = make_conf(credentials)
+    env = get_env(conf)
+    shared = env["WSLENV"].split(":")
+    assert shared == [*conf["keys"], *conf["aliases"]]
 
 
 def test_get_env_no_keys(os_keyring):

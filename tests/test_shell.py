@@ -46,7 +46,9 @@ def test_get_shell_windows_fallback(monkeypatch, undetectable_shell):
     # a bare file name, so that the assertion also holds on posix, where
     # backslashes are not path separators
     monkeypatch.setenv("COMSPEC", "CMD.EXE")
-    assert get_shell() == ("cmd.exe", "CMD.EXE")
+    # without the extension, the way shellingham reports shell names, so
+    # that run_cmd recognizes cmd and hands it /C
+    assert get_shell() == ("cmd", "CMD.EXE")
 
 
 def test_get_shell_unsupported_os(monkeypatch, undetectable_shell):
@@ -138,6 +140,34 @@ def test_run_cmd_invocation_per_shell(monkeypatch, shell_name, expected):
     )
     run_cmd(["echo", "foo", "bar"], env={"FOO": "bar"})
     assert invocations == [([shell_path, *expected], {"FOO": "bar"})]
+
+
+@pytest.fixture
+def called_from_wsl(monkeypatch):
+    """Pretend the windows install was called from a distribution shell"""
+    monkeypatch.setattr(keycmd.shell, "from_wsl", lambda: True)
+    invocations = []
+    monkeypatch.setattr(
+        keycmd.shell, "exec", lambda args, env=None: invocations.append((args, env))
+    )
+    return invocations
+
+
+def test_run_shell_in_wsl(called_from_wsl):
+    """--shell opens a shell in the distribution, not a windows shell"""
+    run_shell(env={"FOO": "bar"})
+    assert called_from_wsl == [(["wsl.exe"], {"FOO": "bar"})]
+
+
+def test_run_cmd_in_wsl(called_from_wsl):
+    """The command runs in the distribution, where the user typed it"""
+    run_cmd(["echo", "foo"], env={"FOO": "bar"})
+    assert called_from_wsl == [(["wsl.exe", "--", "echo", "foo"], {"FOO": "bar"})]
+
+
+def test_run_cmd_in_wsl_verbose(capsys, called_from_wsl, verbose):
+    run_cmd(["echo", "foo"])
+    assert pformat(["wsl.exe", "--", "echo", "foo"]) in capsys.readouterr().out
 
 
 def test_exec_calls_execvpe(monkeypatch):

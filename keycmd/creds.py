@@ -5,6 +5,7 @@ import keyring
 
 from .conf import Conf
 from .logs import error, vlog
+from .wsl import share_env
 
 # credential, username, password, apply_b64, format string
 KeyData = tuple[str, str, str, bool, str | None]
@@ -79,4 +80,8 @@ def get_env(conf: Conf) -> dict[str, str]:
             f" as environment variable {alias}"
             f" (b64: {apply_b64}, format: {format_string})"
         )
+
+    # an environment does not cross the boundary between WSL and windows
+    # by itself, whichever side of it the command ends up running on
+    share_env(env, [*conf["keys"], *conf.get("aliases", {})])
     return env
