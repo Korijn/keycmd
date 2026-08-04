@@ -10,7 +10,7 @@ license-files = ["LICENSE"]
 keywords = ["keyring", "secrets", "credentials", "environment"]
 classifiers = ["Typing :: Typed"]
 dependencies = [
-    "keyring>=25.6",
+    "keyring>=25.7",
     "shellingham>=1.5.4",
 ]
 
