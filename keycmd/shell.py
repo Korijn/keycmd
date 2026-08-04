@@ -9,6 +9,7 @@ from typing import NoReturn
 from shellingham import ShellDetectionFailure, detect_shell
 
 from .logs import vlog, vwarn
+from .wsl import cmd_argv, from_wsl, shell_argv
 
 USE_SUBPROCESS: bool = False  # exposed for testing
 IS_WINDOWS: bool = os.name == "nt"
@@ -42,7 +43,9 @@ def get_shell() -> tuple[str, str]:
             shell_path = os.environ["COMSPEC"]
         else:
             raise NotImplementedError(f"os {os.name} support not available") from err
-        shell_name = Path(shell_path).name.lower()
+        # shellingham reports names without their extension, and run_cmd
+        # tells the shells apart by name, so COMSPEC has to lose its .exe
+        shell_name = Path(shell_path).stem.lower()
     vlog(f"detected shell: {shell_path}")
     return shell_name, shell_path
 
@@ -50,19 +53,29 @@ def get_shell() -> tuple[str, str]:
 def run_shell(env: Mapping[str, str] | None = None) -> NoReturn:
     """Open an interactive shell for the user to interact
     with."""
-    shell_name, shell_path = get_shell()
-    vlog(f"spawning subshell: {shell_name}")
-    exec([shell_path], env)
+    if from_wsl():
+        # the shell the user is typing in lives inside the distribution,
+        # not on this side of the boundary
+        vlog("spawning subshell in WSL")
+        argv = shell_argv()
+    else:
+        shell_name, shell_path = get_shell()
+        vlog(f"spawning subshell: {shell_name}")
+        argv = [shell_path]
+    exec(argv, env)
 
 
 def run_cmd(cmd: Sequence[str], env: Mapping[str, str] | None = None) -> NoReturn:
     """Run a one-off command in a shell."""
-    shell_name, shell_path = get_shell()
-    if shell_name == "cmd":
-        opt = "/C"
+    if from_wsl():
+        full_command = cmd_argv(cmd)
     else:
-        opt = "-c"
-        cmd = [" ".join(cmd)]
-    full_command = [shell_path, opt, *cmd]
+        shell_name, shell_path = get_shell()
+        if shell_name == "cmd":
+            opt = "/C"
+        else:
+            opt = "-c"
+            cmd = [" ".join(cmd)]
+        full_command = [shell_path, opt, *cmd]
     vlog(f"running command: {pformat(full_command)}")
     exec(full_command, env)

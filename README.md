@@ -83,6 +83,12 @@ So, if you would like keyring to connect from the WSL environment to your Window
 
 You have to install keycmd according to the above instructions (globally, or with pyenv) **in Windows**, not in WSL. Then, assuming `keycmd` is on your Windows `PATH`, it should now be available in WSL as well!
 
+Keep in mind that keycmd is a Windows process in this setup, so left to its own devices it would run your command in a Windows shell, and `keycmd --shell` would open one. It doesn't: when keycmd notices it was called from a distro, it runs your command back inside that distro through `wsl.exe`, and `keycmd --shell` opens a shell there.
+
+Your credentials do not come along by themselves, since neither side of the WSL boundary inherits the other's environment. Only the variables listed in [`WSLENV`](https://devblogs.microsoft.com/commandline/share-environment-vars-between-wsl-and-windows/) make the trip, so keycmd adds the variables from your configuration to it.
+
+If keycmd gets it wrong, set the `KEYCMD_WSL` environment variable to `0` to keep it on the Windows side, or to `1` to send it through `wsl.exe` regardless. `keycmd --verbose` reports which way it went, and what it based that on.
+
 ### Up- and downgrading
 
 If at a later point in time, you want to install a different version of keycmd, just use pip again.
@@ -447,7 +453,9 @@ The tests that read and write credentials need a real OS keyring that can be unl
 
 The [WSL setup](#wsl-installation) has two halves. Working *inside* WSL, keycmd is a posix process like any other, talking to whichever keyring backend the distro provides; that is the Linux job above, keyring daemon and all. The other half, calling the Windows install of keycmd from a WSL shell to reach the Windows credential manager, crosses the interop boundary, and that is what `tests/test_wsl.py` covers: a credential in the credential manager, a shell inside WSL, and the Windows install of keycmd in between.
 
-Those tests are opt in, because installing WSL takes a CI job of its own. On a Windows machine that has WSL installed:
+Everything about that boundary that can be decided without a Windows machine is in `tests/test_wsl_interop.py` instead, and runs everywhere: which process tree and working directory mean keycmd was called from a distro, the command lines it builds for `wsl.exe`, and the `WSLENV` that carries the credentials across.
+
+The end to end tests are opt in, because installing WSL takes a CI job of its own. On a Windows machine that has WSL installed:
 
 ```powershell
 $env:KEYCMD_TEST_WSL = 1
