@@ -1,5 +1,6 @@
 import sys
 from os import environ
+from pprint import pformat
 from shutil import which
 from subprocess import run
 
@@ -104,9 +105,12 @@ def test_run_cmd_shell_invocation(capsys, subprocess, shell, verbose):
     out = capsys.readouterr().out
     # cmd is the odd one out, it takes /C and keeps the arguments separate
     if shell.name == "cmd":
-        assert repr([shell.path, "/C", "echo", "foo"]) in out
+        expected = [shell.path, "/C", "echo", "foo"]
     else:
-        assert repr([shell.path, "-c", "echo foo"]) in out
+        expected = [shell.path, "-c", "echo foo"]
+    # the command is logged through pformat, which wraps long shell paths
+    # over several lines
+    assert pformat(expected) in out
 
 
 @pytest.mark.parametrize(
