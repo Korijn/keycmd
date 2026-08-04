@@ -17,12 +17,21 @@ posix_only = pytest.mark.skipif(
 )
 
 
-@pytest.fixture
-def undetectable_shell(monkeypatch):
+# the two ways shellingham gives up: the failure it documents, and the one
+# that escapes it when reading the process table goes wrong mid-walk
+# (sarugaku/shellingham#99)
+DETECTION_FAILURES = [
+    ShellDetectionFailure("nope"),
+    FileNotFoundError(2, "No such file or directory", "/proc/R/stat"),
+]
+
+
+@pytest.fixture(params=DETECTION_FAILURES, ids=lambda err: type(err).__name__)
+def undetectable_shell(monkeypatch, request):
     """Make shellingham fail, so get_shell falls back to the system default"""
 
     def detect_shell(pid):
-        raise ShellDetectionFailure("nope")
+        raise request.param
 
     monkeypatch.setattr(keycmd.shell, "detect_shell", detect_shell)
 

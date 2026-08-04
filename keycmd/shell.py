@@ -35,7 +35,11 @@ def get_shell() -> tuple[str, str]:
     this Python process"""
     try:
         shell_name, shell_path = detect_shell(os.getpid())
-    except ShellDetectionFailure as err:
+    # shellingham walks the process table lazily, from inside a generator, so
+    # a platform whose format it misjudges surfaces the failed read itself
+    # rather than ShellDetectionFailure (sarugaku/shellingham#99). The system
+    # default is a better answer than a traceback either way.
+    except (ShellDetectionFailure, OSError) as err:
         vwarn("failed to detect parent process shell, falling back to system default")
         if IS_POSIX:
             shell_path = os.environ["SHELL"]
