@@ -15,7 +15,7 @@ repos:
         require_serial: true
       - id: ty
         name: Typecheck
-        entry: uv run ty check
+        entry: uv run ty check --error-on-warning
         language: system
         types: [python]
         pass_filenames: false

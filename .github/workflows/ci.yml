@@ -47,7 +47,7 @@ jobs:
       - name: Install only ty
         run: uv sync --only-group ty
       - name: Typecheck
-        run: uv run --no-sync ty check
+        run: uv run --no-sync ty check --output-format=github --error-on-warning
 
   test:
     name: Test on ${{ matrix.name }}

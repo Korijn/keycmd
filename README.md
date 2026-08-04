@@ -401,6 +401,8 @@ See the [third party backends](https://github.com/jaraco/keyring/#third-party-ba
 
 This project uses [uv](https://docs.astral.sh/uv/) for dependency management, [ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [ty](https://docs.astral.sh/ty/) for type checking.
 
+The `keycmd` package is fully annotated and ships a `py.typed` marker, so the types are available to anything that imports it. Ruff's `ANN` rules keep it that way; the test suite is exempt.
+
 ```bash
 # create the virtual environment and install all dependencies
 uv sync

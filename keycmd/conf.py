@@ -1,14 +1,40 @@
 import tomllib
 from pathlib import Path
 from pprint import pformat
+from typing import Any, Literal, NotRequired, TypedDict, cast, overload
 
 from .logs import vlog
 
+
+class KeyConf(TypedDict):
+    """A single entry of the [keys] table"""
+
+    credential: str
+    username: str
+    b64: NotRequired[bool]
+    format: NotRequired[str]
+
+
+class AliasConf(TypedDict):
+    """A single entry of the [aliases] table"""
+
+    key: str
+    b64: NotRequired[bool]
+    format: NotRequired[str]
+
+
+class Conf(TypedDict):
+    """The merged keycmd configuration"""
+
+    keys: dict[str, KeyConf]
+    aliases: NotRequired[dict[str, AliasConf]]
+
+
 # exposed for testing
-USERPROFILE = "~"
+USERPROFILE: str | Path = "~"
 
 
-def load_toml(path):
+def load_toml(path: Path) -> dict[str, Any]:
     """Load a toml file"""
     with path.open("rb") as fh:
         try:
@@ -17,17 +43,25 @@ def load_toml(path):
             raise tomllib.TOMLDecodeError(f"invalid TOML in {path}:\n{err}") from err
 
 
-def load_pyproj(path):
+def load_pyproj(path: Path) -> dict[str, Any]:
     """Load [tool.keycmd] from a pyproject.toml file"""
     data = load_toml(path)
     return data.get("tool", {}).get("keycmd", {})
 
 
-def find_file(fname, first_only=True):
+@overload
+def find_file(fname: str, first_only: Literal[True] = True) -> Path | None: ...
+
+
+@overload
+def find_file(fname: str, first_only: Literal[False]) -> list[Path]: ...
+
+
+def find_file(fname: str, first_only: bool = True) -> Path | list[Path] | None:
     """Find a file by walking up the filesystem, starting at cwd"""
     cur = Path.cwd()
     home = Path.home()
-    results = []
+    results: list[Path] = []
     while True:
         candidate = cur / fname
         if candidate.is_file():
@@ -51,14 +85,15 @@ def find_file(fname, first_only=True):
         # be loaded and merged
         results.reverse()
         return results
+    return None
 
 
-def defaults():
+def defaults() -> dict[str, Any]:
     """Generate the default config"""
     return {"keys": {}}
 
 
-def merge_conf(a, b):
+def merge_conf(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
     """
     Merges two deep dictionary structures.
     All other datatypes are simply overwritten
@@ -73,7 +108,7 @@ def merge_conf(a, b):
     return a
 
 
-def load_conf():
+def load_conf() -> Conf:
     """
     Load merged configuration from the following files:
     - defaults()
@@ -106,4 +141,6 @@ def load_conf():
 
     vlog(f"merged config:\n{pformat(conf)}")
 
-    return conf
+    # the config is user authored, so this is a statement of the shape keycmd
+    # expects rather than a guarantee; get_env reports violations as user errors
+    return cast(Conf, conf)

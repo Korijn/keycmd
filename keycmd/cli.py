@@ -1,5 +1,6 @@
 import argparse
 import tomllib
+from collections.abc import Sequence
 
 from . import __version__
 from .conf import load_conf
@@ -7,7 +8,7 @@ from .creds import get_env
 from .logs import error, log, set_verbose
 from .shell import run_cmd, run_shell
 
-cli = argparse.ArgumentParser(
+cli: argparse.ArgumentParser = argparse.ArgumentParser(
     prog="keycmd",
 )
 cli.add_argument(
@@ -29,14 +30,14 @@ cli.add_argument(
 cli.add_argument("command", nargs=argparse.REMAINDER, help="command to run")
 
 
-def main(args=None):
+def main(args: Sequence[str] | None = None) -> None:
     """CLI entrypoint"""
-    args = cli.parse_args(args=args)
+    parsed = cli.parse_args(args=args)
 
-    if args.verbose:
+    if parsed.verbose:
         set_verbose()
 
-    if args.version:
+    if parsed.version:
         log(f"v{__version__}")
         return
 
@@ -46,9 +47,9 @@ def main(args=None):
         error(err)
     env = get_env(conf)
 
-    if args.shell:
+    if parsed.shell:
         run_shell(env=env)
-    elif args.command:
-        run_cmd(args.command, env=env)
+    elif parsed.command:
+        run_cmd(parsed.command, env=env)
     else:
         error("missing command argument")

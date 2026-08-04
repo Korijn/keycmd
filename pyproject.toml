@@ -8,6 +8,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 keywords = ["keyring", "secrets", "credentials", "environment"]
+classifiers = ["Typing :: Typed"]
 dependencies = [
     "keyring>=25.6",
     "shellingham>=1.5.4",
@@ -50,6 +51,7 @@ select = [
     "I",   # isort imports
     "N",   # pep8-naming
     "B",   # flake8-bugbear
+    "ANN", # flake8-annotations
     "T10", # flake8-debugger
     "T20", # flake8-print
     "RUF", # ruff
@@ -58,9 +60,22 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 # command line tool that reports through print
 "keycmd/logs.py" = ["T201"]
+# the package is fully annotated, the test suite is not
+"tests/*" = ["ANN"]
 
 [tool.ty.src]
 include = ["keycmd"]
+
+[tool.ty.rules]
+# rules that are off by default, enabled because the package is fully typed
+missing-type-argument = "error"
+possibly-missing-attribute = "error"
+possibly-missing-import = "error"
+possibly-unresolved-reference = "error"
+division-by-zero = "error"
+# suppressions have to name the rule they suppress, and have to be needed
+blanket-ignore-comment = "error"
+unused-ignore-comment = "error"
 
 [tool.ty.environment]
 # Match the oldest supported Python version (requires-python), so
