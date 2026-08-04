@@ -10,6 +10,7 @@ Installing WSL is a CI job of its own, so they are opt in.
 """
 
 import os
+from pathlib import PureWindowsPath
 from shutil import which
 from subprocess import run
 
@@ -34,18 +35,26 @@ def wsl(*args):
     return run(["wsl.exe", "--", *args], capture_output=True)
 
 
-def wsl_bash(script):
-    return wsl("bash", "-euo", "pipefail", "-c", script)
+def wsl_sh(script):
+    """Run a shell script in the default WSL distribution
+
+    Plain sh, since not every distribution ships bash.
+    """
+    return wsl("sh", "-eu", "-c", script)
 
 
 def wsl_path(path):
-    """Translate a Windows path into the path WSL knows it by"""
-    # wslpath takes forward slashes too, and unlike backslashes they
-    # survive the trip through wsl.exe's command line
-    windows_path = str(path).replace("\\", "/")
-    p = wsl("wslpath", "-a", windows_path)
-    assert p.returncode == 0, f"{windows_path}: {decode(p.stderr)}"
-    return decode(p.stdout).strip()
+    """Translate a Windows path into the path WSL knows it by
+
+    Done here rather than with wslpath, which is not part of every
+    distribution's root file system, and whose backslashes would not
+    survive the trip through wsl.exe's command line anyway.
+    """
+    path = PureWindowsPath(path)
+    drive = path.drive
+    assert drive.endswith(":"), f"not an absolute windows path: {path}"
+    rest = path.as_posix()[len(drive) :].lstrip("/")
+    return f"/mnt/{drive[0].lower()}/{rest}"
 
 
 @pytest.fixture(scope="session")
@@ -56,15 +65,18 @@ def keycmd_exe():
     return wsl_path(path)
 
 
-def test_wsl_is_reachable():
-    p = wsl_bash("uname -s")
+def test_wsl_reads_windows_paths(tmp_path):
+    """WSL is reachable, and it sees the Windows file system where expected"""
+    marker = tmp_path / "marker"
+    marker.write_text("hello from windows", encoding="utf-8")
+    p = wsl_sh(f"cat '{wsl_path(marker)}'")
     assert p.returncode == 0, decode(p.stderr)
-    assert decode(p.stdout).strip() == "Linux"
+    assert decode(p.stdout).strip() == "hello from windows"
 
 
 def test_version_from_wsl(keycmd_exe):
     """The Windows install runs when it is invoked from a WSL shell"""
-    p = wsl_bash(f"'{keycmd_exe}' --version")
+    p = wsl_sh(f"'{keycmd_exe}' --version")
     assert p.returncode == 0, decode(p.stderr)
     assert decode(p.stdout).strip().startswith("keycmd: v")
 
@@ -83,7 +95,7 @@ def test_credential_manager_from_wsl(
         f"cd '{wsl_path(ch_tmpdir)}'; "
         f"'{keycmd_exe}' --verbose echo '%{var}%' '$env:{var}'"
     )
-    p = wsl_bash(script)
+    p = wsl_sh(script)
     output = f"{decode(p.stdout)}\n{decode(p.stderr)}"
     assert p.returncode == 0, output
     assert f"as environment variable {var}" in output

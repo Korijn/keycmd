@@ -153,7 +153,12 @@ jobs:
       - name: Install WSL
         uses: Vampire/setup-wsl@d1da7f2c0322a5ee4f24975344f67fc0f5baf364 # v7.0.0
         with:
-          distribution: Ubuntu-24.04
+          # the smallest distribution, on the WSL version that needs no
+          # virtual machine: the tests only need a shell on the other side
+          # of the interop boundary, and provisioning WSLv2 with a store
+          # distribution has taken anywhere from one to twenty minutes
+          distribution: Alpine-3.23
+          wsl-version: 1
       - name: Test
         run: uv run --no-sync pytest -v tests/test_wsl.py
 
