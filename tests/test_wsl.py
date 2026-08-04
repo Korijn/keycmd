@@ -88,17 +88,20 @@ def test_version_from_wsl(keycmd_exe):
 def test_credential_manager_from_wsl(
     keycmd_exe, ch_tmpdir, local_conf, shell_credentials
 ):
-    """A credential stored on Windows reaches a command run from WSL"""
+    """A credential stored on Windows reaches a command run from WSL
+
+    The command runs back inside the distribution the user typed it in,
+    rather than in a Windows shell: printenv is a Linux command, and the
+    credential only reaches it because keycmd shares it through WSLENV.
+    """
     var = local_conf.varname
     # one line and free of quotes, so that the script survives the trip
     # through wsl.exe intact; the config is picked up from the working
-    # directory, which crosses the boundary as a windows path, and printing
-    # the environment with cmd works whichever shell keycmd ends up
-    # detecting on the windows side, where %VAR% and $env:VAR each only
-    # work in one of them
-    script = f"cd {wsl_path(ch_tmpdir)}; {keycmd_exe} --verbose cmd /c set"
+    # directory, which crosses the boundary as a windows path
+    script = f"cd {wsl_path(ch_tmpdir)}; {keycmd_exe} --verbose printenv {var}"
     p = wsl_sh(script)
     output = f"{decode(p.stdout)}\n{decode(p.stderr)}"
     assert p.returncode == 0, output
     assert f"as environment variable {var}" in output
-    assert f"{var}={shell_credentials.password}" in output
+    assert "called from WSL" in output
+    assert shell_credentials.password in decode(p.stdout)

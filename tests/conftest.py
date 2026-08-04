@@ -15,6 +15,7 @@ import pytest
 
 import keycmd.conf
 import keycmd.shell
+import keycmd.wsl
 from keycmd.logs import set_verbose
 from keycmd.shell import IS_WINDOWS
 
@@ -99,6 +100,21 @@ def shell(request, monkeypatch):
 
     monkeypatch.setattr(keycmd.shell, "detect_shell", detect_shell)
     return fake_shell
+
+
+@pytest.fixture(autouse=True)
+def outside_wsl(monkeypatch):
+    """Keep the suite off the WSL code path unless a test asks for it
+
+    Windows keycmd called from a distribution hands the command to
+    wsl.exe instead of to a windows shell, and shares the credentials
+    through WSLENV. Neither belongs in a run of the rest of the suite,
+    which should look the same on every platform; tests/test_wsl_interop.py
+    drives that code path deliberately.
+    """
+    monkeypatch.setattr(keycmd.wsl, "IS_WINDOWS", False)
+    monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
+    monkeypatch.delenv("WSL_INTEROP", raising=False)
 
 
 @pytest.fixture
