@@ -18,12 +18,20 @@ The most common use case is to load credentials for package managers such as pip
 
 ## Installation
 
+`keycmd` requires Python 3.13 or newer.
+
 > **Note**
 > If you're intending to install `keycmd` in a WSL or pyenv environment, you'll have to skip ahead to the specific installation instructions for those environments.
 
 ### Global installation
 
-Install `keycmd` from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
+Since `keycmd` is a command line tool, the recommended way to install it is with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv tool install keycmd
+```
+
+This installs `keycmd` into its own isolated environment and puts the executable on your `PATH`. Alternatively, install it from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
 
 Note that the executable `keycmd` has to be installed to a folder that is on your `PATH` environment variable, or the command won't be available globally. Assuming you were able to run `pip` just now, the `keycmd` executable should end up in the exact same location and everything should be fine.
 
@@ -42,7 +50,7 @@ Run the following commands one by one to install keycmd into its own standalone 
 
 ```bash
 # run the following commands one by one
-pyenv virtualenv 3.9 keycmd
+pyenv virtualenv 3.13 keycmd
 pyenv activate keycmd
 pip install keycmd
 pathToKeycmd=$(python -c 'import sys; from pathlib import Path; print(Path(sys.executable).parent / "keycmd")')
@@ -388,3 +396,30 @@ aSdtIG5vdCB0aGF0IHN0dXBpZCA6KQ==
 Since keycmd uses keyring as its backend, you're not limited to just working with OS keyrings. 🤯 Any keyring backend will work with keycmd. No special configuration required!
 
 See the [third party backends](https://github.com/jaraco/keyring/#third-party-backends) list for all options.
+
+## Development
+
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management, [ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [ty](https://docs.astral.sh/ty/) for type checking.
+
+The `keycmd` package is fully annotated and ships a `py.typed` marker, so the types are available to anything that imports it. Ruff's `ANN` rules keep it that way; the test suite is exempt.
+
+```bash
+# create the virtual environment and install all dependencies
+uv sync
+
+# install the git hooks that run the checks below on every commit
+uv run pre-commit install
+
+# lint, format, typecheck and test
+uv run ruff check --fix
+uv run ruff format
+uv run ty check
+uv run pytest tests
+```
+
+Note that the test suite exercises a real OS keyring, so it needs a keyring backend that can be unlocked without user interaction. On Windows that works out of the box, which is why CI runs the tests there. On other platforms you can point keyring at a file-based backend instead:
+
+```bash
+uv run --with keyrings.alt pytest tests
+# with PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring set in your environment
+```
