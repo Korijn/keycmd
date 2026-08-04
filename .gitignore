@@ -1,4 +1,10 @@
-.ruff_cache
+*.egg-info/
 *.pyc
 __pycache__
+.vscode
+.coverage
+.ruff_cache
+.pytest_cache
+.venv
 dist
+uv.lock

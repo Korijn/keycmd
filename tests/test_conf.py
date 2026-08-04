@@ -1,8 +1,8 @@
 import os
+import tomllib
 from pathlib import Path
 
 import pytest
-import tomli
 
 import keycmd.conf
 from keycmd.conf import (
@@ -33,7 +33,7 @@ def test_load_toml(ch_tmpdir):
 
     path = Path("baz.toml")
     path.write_text("[keys}", encoding="utf-8")
-    with pytest.raises(tomli.TOMLDecodeError) as err:
+    with pytest.raises(tomllib.TOMLDecodeError) as err:
         load_toml(path)
     assert path.name in err.value.args[0]
 
@@ -50,7 +50,7 @@ def test_load_pyproj(ch_tmpdir):
 
     path = Path("pyproject.toml")
     path.write_text("[keys}", encoding="utf-8")
-    with pytest.raises(tomli.TOMLDecodeError) as err:
+    with pytest.raises(tomllib.TOMLDecodeError) as err:
         load_pyproj(path)
     assert path.name in err.value.args[0]
 

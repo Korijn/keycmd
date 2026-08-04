@@ -1,19 +1,23 @@
 import os
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from pprint import pformat
 from subprocess import run
 from sys import exit
+from typing import NoReturn
 
 from shellingham import ShellDetectionFailure, detect_shell
 
 from .logs import vlog, vwarn
 
-USE_SUBPROCESS = False  # exposed for testing
-IS_WINDOWS = os.name == "nt"
-IS_POSIX = os.name == "posix"
+USE_SUBPROCESS: bool = False  # exposed for testing
+IS_WINDOWS: bool = os.name == "nt"
+IS_POSIX: bool = os.name == "posix"
 
 
-def exec(args, env):
+def exec(args: list[str], env: Mapping[str, str] | None = None) -> NoReturn:
+    if env is None:
+        env = os.environ
     if USE_SUBPROCESS or IS_WINDOWS:
         # windows does not support process replacement
         # as well as posix systems do
@@ -25,7 +29,7 @@ def exec(args, env):
     os.execvpe(args[0], args, env)
 
 
-def get_shell():
+def get_shell() -> tuple[str, str]:
     """Use shellingham to detect the shell that invoked
     this Python process"""
     try:
@@ -43,7 +47,7 @@ def get_shell():
     return shell_name, shell_path
 
 
-def run_shell(env=None):
+def run_shell(env: Mapping[str, str] | None = None) -> NoReturn:
     """Open an interactive shell for the user to interact
     with."""
     shell_name, shell_path = get_shell()
@@ -51,7 +55,7 @@ def run_shell(env=None):
     exec([shell_path], env)
 
 
-def run_cmd(cmd, env=None):
+def run_cmd(cmd: Sequence[str], env: Mapping[str, str] | None = None) -> NoReturn:
     """Run a one-off command in a shell."""
     shell_name, shell_path = get_shell()
     if shell_name == "cmd":

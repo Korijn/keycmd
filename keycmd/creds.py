@@ -3,15 +3,27 @@ from os import environ
 
 import keyring
 
+from .conf import Conf
 from .logs import error, vlog
 
+# credential, username, password, apply_b64, format string
+KeyData = tuple[str, str, str, bool, str | None]
 
-def b64(value):
+
+def b64(value: str) -> str:
     """Convert a string to its base64 representation"""
     return base64.b64encode(value.encode("utf-8")).decode("utf-8")
 
 
-def expose(env, key, credential, username, password, apply_b64, format_string):
+def expose(
+    env: dict[str, str],
+    key: str,
+    credential: str,
+    username: str,
+    password: str,
+    apply_b64: bool,
+    format_string: str | None,
+) -> None:
     if format_string:
         password = format_string.format(
             credential=credential,
@@ -23,11 +35,11 @@ def expose(env, key, credential, username, password, apply_b64, format_string):
     env[key] = password
 
 
-def get_env(conf):
+def get_env(conf: Conf) -> dict[str, str]:
     """Load credentials from the OS keyring according to user configuration"""
     env = environ.copy()
 
-    key_data = {}
+    key_data: dict[str, KeyData] = {}
     for key, src in conf["keys"].items():
         password = keyring.get_password(src["credential"], src["username"])
         if password is None:
@@ -53,17 +65,17 @@ def get_env(conf):
             f" (b64: {apply_b64}, format: {format_string})"
         )
 
-    for alias, src in conf.get("aliases", {}).items():
-        key = key_data.get(src["key"])
-        if key is None:
-            error(f"MISSING alias key {src['key']}")
+    for alias, alias_src in conf.get("aliases", {}).items():
+        data = key_data.get(alias_src["key"])
+        if data is None:
+            error(f"MISSING alias key {alias_src['key']}")
         # re-use base data but replace apply_b64 and format_string
-        credential, username, password, _, _ = key
-        apply_b64 = src.get("b64", False)
-        format_string = src.get("format")
+        credential, username, password, _, _ = data
+        apply_b64 = alias_src.get("b64", False)
+        format_string = alias_src.get("format")
         expose(env, alias, credential, username, password, apply_b64, format_string)
         vlog(
-            f"aliasing {src['key']}"
+            f"aliasing {alias_src['key']}"
             f" as environment variable {alias}"
             f" (b64: {apply_b64}, format: {format_string})"
         )
