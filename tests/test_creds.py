@@ -100,9 +100,12 @@ def test_get_env_no_keys(os_keyring):
     assert env == dict(environ)
 
 
-def test_get_env_verbose(capsys, credentials, verbose):
+def test_get_env_verbose(capsys, credentials, os_keyring, verbose):
     get_env(make_conf(credentials))
     out = capsys.readouterr().out
+    # where the credentials came from, which is the first thing to check
+    # when they are not the ones that were expected
+    assert f"keyring backend: {os_keyring}" in out
     assert (
         f"exposing credential {credentials.key}"
         f" with user {credentials.username}"

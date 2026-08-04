@@ -1,14 +1,12 @@
 import os
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from pprint import pformat
-from subprocess import run
 from sys import exit
 from typing import NoReturn
 
 from shellingham import ShellDetectionFailure, detect_shell
 
-from .logs import vlog, vwarn
+from .logs import vlog, vlog_pretty, vwarn
 from .wsl import cmd_argv, from_wsl, shell_argv
 
 USE_SUBPROCESS: bool = False  # exposed for testing
@@ -21,7 +19,10 @@ def exec(args: list[str], env: Mapping[str, str] | None = None) -> NoReturn:
         env = os.environ
     if USE_SUBPROCESS or IS_WINDOWS:
         # windows does not support process replacement
-        # as well as posix systems do
+        # as well as posix systems do; the posix path below never spawns a
+        # subprocess, so it does not pay to import one either
+        from subprocess import run
+
         p = run(args, shell=False, env=env)
         exit(p.returncode)
     # i know this looks like a bug
@@ -77,5 +78,5 @@ def run_cmd(cmd: Sequence[str], env: Mapping[str, str] | None = None) -> NoRetur
             opt = "-c"
             cmd = [" ".join(cmd)]
         full_command = [shell_path, opt, *cmd]
-    vlog(f"running command: {pformat(full_command)}")
+    vlog_pretty("running command: ", full_command)
     exec(full_command, env)

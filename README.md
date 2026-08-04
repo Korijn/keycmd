@@ -390,8 +390,9 @@ keycmd: merged config:
           'ARTIFACTS_TOKEN_B64': {'b64': True,
                                   'credential': 'korijn@poetry-repository-main',
                                   'username': 'korijn'}}}
-keycmd: exposing credential korijn@poetry-repository-main belonging to user korijn as environment variable ARTIFACTS_TOKEN (b64: False)
-keycmd: exposing credential korijn@poetry-repository-main belonging to user korijn as environment variable ARTIFACTS_TOKEN_B64 (b64: True)
+keycmd: keyring backend: <keyring.backends.Windows.WinVaultKeyring object at 0x000001F8C2A1B4D0>
+keycmd: exposing credential korijn@poetry-repository-main with user korijn as environment variable ARTIFACTS_TOKEN (b64: False, format: None)
+keycmd: exposing credential korijn@poetry-repository-main with user korijn as environment variable ARTIFACTS_TOKEN_B64 (b64: True, format: None)
 keycmd: detected shell: C:\Windows\System32\cmd.exe
 keycmd: running command: ['C:\\Windows\\System32\\cmd.exe', '/C', 'echo', '%ARTIFACTS_TOKEN_B64%']
 aSdtIG5vdCB0aGF0IHN0dXBpZCA6KQ==
@@ -402,6 +403,19 @@ aSdtIG5vdCB0aGF0IHN0dXBpZCA6KQ==
 Since keycmd uses keyring as its backend, you're not limited to just working with OS keyrings. 🤯 Any keyring backend will work with keycmd. No special configuration required!
 
 See the [third party backends](https://github.com/jaraco/keyring/#third-party-backends) list for all options.
+
+### Startup time
+
+Left to itself, keyring works out which backend to use by loading every backend registered by every installed package and picking the most suitable one. That search runs on each `keycmd` invocation and, on a machine with a few packages installed, costs more time than the whole of the rest of a `keycmd` run put together.
+
+If that shows up in your shell, name the backend you already know you want, and keyring will load that one instead of going looking:
+
+```bash
+# in your shell profile; use the backend your platform actually uses
+export PYTHON_KEYRING_BACKEND=keyring.backends.SecretService.Keyring
+```
+
+`keyring --list-backends` prints the names to choose from, and `keycmd --verbose` will tell you which one ends up being used. The setting is keyring's own, so it applies to everything else using keyring too.
 
 ## Development
 

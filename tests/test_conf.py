@@ -7,11 +7,11 @@ import pytest
 import keycmd.conf
 from keycmd.conf import (
     defaults,
-    find_file,
     load_conf,
     load_pyproj,
     load_toml,
     merge_conf,
+    walk_up,
 )
 
 
@@ -84,32 +84,40 @@ def test_load_pyproj(ch_tmpdir):
     assert path.name in err.value.args[0]
 
 
-def test_find_file(ch_tmpdir, monkeypatch, tmp_path):
+def found(fname):
+    """The files the walk turns up, nearest first"""
+    return [
+        candidate.resolve()
+        for directory in walk_up()
+        if (candidate := directory / fname).is_file()
+    ]
+
+
+def test_walk_up(ch_tmpdir, monkeypatch, tmp_path):
     # the walk stops just below the home folder
     home = set_home(monkeypatch, tmp_path)
     p1 = create_path("../.blabla")
     p2 = create_path("../../.blabla")
     p3 = create_path("../../../.blabla")
     create_path(home / ".blabla")
-    assert find_file(".blabla") == p1
-    assert find_file(".blabla", first_only=False) == [p3, p2, p1]
+    assert found(".blabla") == [p1, p2, p3]
+    # and at a git repository, so it never leaves one
     (p2.parent / ".git").mkdir(exist_ok=True, parents=True)
-    assert find_file(".blabla", first_only=False) == [p2, p1]
+    assert found(".blabla") == [p1, p2]
 
 
-def test_find_file_missing(ch_tmpdir, monkeypatch, tmp_path):
+def test_walk_up_missing(ch_tmpdir, monkeypatch, tmp_path):
     set_home(monkeypatch, tmp_path)
-    assert find_file(".blabla") is None
-    assert find_file(".blabla", first_only=False) == []
+    assert found(".blabla") == []
 
 
-def test_find_file_stops_at_filesystem_root(ch_tmpdir, monkeypatch, tmp_path):
+def test_walk_up_stops_at_filesystem_root(ch_tmpdir, monkeypatch, tmp_path):
     # a home folder that is nowhere near the current directory, so the walk
     # runs all the way into the root of the file system instead of stopping
     # at the home folder
     set_home(monkeypatch, tmp_path / "somewhere" / "else")
     p = create_path(".blabla")
-    assert find_file(".blabla", first_only=False) == [p]
+    assert found(".blabla") == [p]
 
 
 def test_merge_conf():
