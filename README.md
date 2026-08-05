@@ -450,7 +450,7 @@ uv run pytest tests
 
 ### Testing
 
-CI runs the test suite on Windows, macOS and Linux on the latest Python, plus one job on the oldest supported Python to catch anything newer than it allows. The suite adapts to the platform it runs on: it exercises every shell of the platform that is installed (`sh`, `bash` and `zsh` on posix, `cmd`, `powershell` and `pwsh` on Windows), and it skips the process replacement tests on Windows, which has no `execvpe`.
+CI runs the test suite on Windows, macOS and Linux on the latest Python, plus one job on the oldest supported Python to catch anything newer than it allows. The suite adapts to the platform it runs on: it exercises every shell of the platform that is installed (`sh`, `bash` and `zsh` on posix, `cmd` and `powershell` on Windows, and `pwsh` on either, since it installs everywhere and quotes its own way), and it skips the process replacement tests on Windows, which has no `execvpe`.
 
 The tests that read and write credentials need a real OS keyring that can be unlocked without user interaction. They are skipped with a message if there is no such keyring, so the rest of the suite still runs. Set `KEYCMD_REQUIRE_OS_KEYRING=1` to turn those skips into failures instead; CI sets it so that a broken keyring setup can't quietly reduce the coverage of a run.
 

@@ -25,7 +25,11 @@ REQUIRE_OS_KEYRING = os.environ.get("KEYCMD_REQUIRE_OS_KEYRING", "") not in {"",
 
 # shells to exercise, if installed
 POSIX_SHELLS = ("sh", "bash", "zsh")
-WINDOWS_SHELLS = ("cmd", "powershell", "pwsh")
+WINDOWS_SHELLS = ("cmd", "powershell")
+# pwsh installs on every platform keycmd supports, and is the one shell
+# taking -c that does not quote the way a posix shell does, so it is worth
+# exercising wherever it turns up rather than on windows alone
+ANY_PLATFORM_SHELLS = ("pwsh",)
 
 # credential used by the keyring backed fixtures
 KEY = "__keycmd_testß"
@@ -95,7 +99,7 @@ class Shell:
 
 def installed_shells():
     """The shells of this platform's candidate list that are installed"""
-    candidates = WINDOWS_SHELLS if IS_WINDOWS else POSIX_SHELLS
+    candidates = (WINDOWS_SHELLS if IS_WINDOWS else POSIX_SHELLS) + ANY_PLATFORM_SHELLS
     found = []
     for name in candidates:
         path = which(name)
