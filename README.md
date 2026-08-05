@@ -22,10 +22,10 @@ Store a credential in your OS keyring, name it in a `.keycmd` file:
 OPENAI_API_KEY = { credential = "my-openai-token", username = "your-username" }
 ```
 
-...and run anything that needs it:
+...and run anything that needs it, by putting `keycmd` in front of the command you were going to run anyway:
 
 ```bash
-keycmd 'python my_openai_script.py'
+keycmd python my_openai_script.py
 ```
 
 The variable exists inside that command, and nowhere else — no `.env` file, no secret pasted into your terminal, nothing left behind afterwards. 😱 → 😌
@@ -45,7 +45,7 @@ Continue with the [Quick Start tutorial](https://korijn.github.io/keycmd/getting
 Everything lives at **[korijn.github.io/keycmd](https://korijn.github.io/keycmd)**:
 
 * [Installation](https://korijn.github.io/keycmd/getting-started/installation/) — globally, under pyenv, or from WSL
-* [Running commands](https://korijn.github.io/keycmd/guide/running-commands/) — the two invocation forms, quoting, subshells
+* [Running commands](https://korijn.github.io/keycmd/guide/running-commands/) — prefixing a command, quoting one, subshells
 * [Configuration](https://korijn.github.io/keycmd/guide/configuration/) — where it lives, keys, format strings, aliases
 * [Keyring backends](https://korijn.github.io/keycmd/guide/keyring-backends/) — third party backends, and keycmd's startup time
 * [WSL](https://korijn.github.io/keycmd/guide/wsl/) — reaching the Windows Credential Manager from a distribution

@@ -20,13 +20,13 @@ OPENAI_API_KEY = { credential = "my-openai-token", username = "your-username" }
 Now you can run any OpenAI script by just prefixing your command with `keycmd`:
 
 ```bash
-keycmd 'python my_openai_script.py'
+keycmd python my_openai_script.py
 ```
 
 Or a Jupyter notebook:
 
 ```bash
-keycmd 'jupyter notebook'
+keycmd jupyter notebook
 ```
 
 That's all! 🤘 Now you can rest easily, knowing your tokens are safe. 🛌💤

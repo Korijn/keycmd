@@ -5,7 +5,7 @@ import pytest
 
 from keycmd import __version__
 from keycmd.backend import BACKEND_VAR, recall, remember
-from keycmd.cli import cli, main
+from keycmd.cli import cli, end_of_options, main
 
 # modules that cost more to import than the rest of keycmd together, and
 # that nothing needs until it is asked for: keyring only once a credential
@@ -20,12 +20,29 @@ def test_cli_version(capfd):
 
 
 def test_cli(capfd, shell_credentials, local_conf, userprofile, subprocess, shell):
-    # one argument, the form the README recommends, so that the shell
-    # keycmd hands the command line to is the one that expands the variable
+    # one argument, so that the shell keycmd hands the command line to is
+    # the one that expands the variable
     var = shell.env_var(local_conf.varname)
 
     with pytest.raises(SystemExit) as exc_info:
         main([f"echo {var}"])
+    assert exc_info.value.args[0] == 0
+    assert capfd.readouterr().out.strip() == shell_credentials.password
+
+
+def test_cli_unquoted(
+    capfd, shell_credentials, local_conf, userprofile, subprocess, shell
+):
+    """A command written out as separate arguments, the way it is typed
+
+    The form the docs lead with, and the one that needs no shell of its
+    own: the command reads the credential out of the environment keycmd
+    handed it, rather than having a shell expand it first.
+    """
+    show = f"import os; print(os.environ[{local_conf.varname!r}])"
+
+    with pytest.raises(SystemExit) as exc_info:
+        main([sys.executable, "-c", show])
     assert exc_info.value.args[0] == 0
     assert capfd.readouterr().out.strip() == shell_credentials.password
 
@@ -132,6 +149,47 @@ def test_cli_import_stays_lean():
     p = run([sys.executable, "-c", code], capture_output=True)
     assert p.returncode == 0, p.stderr.decode()
     assert p.stdout.decode().split() == []
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected"),
+    [
+        # the habit every tool that runs another one teaches, which keycmd
+        # would otherwise pass on as the first word of the command
+        (["--", "npm", "install"], ["npm", "install"]),
+        (["-v", "--", "npm", "install"], ["npm", "install"]),
+        # what it is actually needed for: a command argparse would read as
+        # an option of keycmd's
+        (["--", "-l"], ["-l"]),
+        (["--", "--version"], ["--version"]),
+        # only the one that ends keycmd's options is keycmd's to remove
+        (["npm", "install", "--", "--flag"], ["npm", "install", "--", "--flag"]),
+        (["--", "--", "npm"], ["--", "npm"]),
+        # nothing to run, which is reported as a missing command
+        (["--"], []),
+        ([], []),
+    ],
+    ids=repr,
+)
+def test_cli_end_of_options(argv, expected):
+    """`--` ends keycmd's own options, and does not reach the command"""
+    assert end_of_options(cli.parse_args(argv).command) == expected
+
+
+def test_cli_end_of_options_runs_the_command(
+    capfd, shell_credentials, local_conf, userprofile, subprocess, shell
+):
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--", "echo", "foo"])
+    assert exc_info.value.args[0] == 0
+    assert capfd.readouterr().out.strip() == "foo"
+
+
+def test_cli_missing_command_after_end_of_options(capfd, ch_tmpdir, userprofile):
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--"])
+    assert exc_info.value.args[0] == 1
+    assert "missing command argument" in capfd.readouterr().err
 
 
 def test_cli_extra_args():

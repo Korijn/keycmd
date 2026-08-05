@@ -66,7 +66,7 @@ keycmd: PYTHON_KEYRING_BACKEND=keyring.backends.SecretService.Keyring already na
 If keyring finds no backend it can use, there is nowhere for keycmd to read credentials from, and it says so rather than failing on the first lookup:
 
 ```
-❯ keycmd 'npm install'
+❯ keycmd npm install
 keycmd: error: keyring has no backend to read credentials from
 keycmd: hint: install one for this platform, or name one you have with PYTHON_KEYRING_BACKEND
 keycmd: hint: see https://github.com/jaraco/keyring#third-party-backends

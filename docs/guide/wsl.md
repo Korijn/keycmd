@@ -30,6 +30,10 @@ keycmd works out where it was called from by looking at its own process tree and
 
 If you have more than one distribution installed, and you are working somewhere on the distribution's own file system, that working directory also names the distribution, and keycmd passes it to `wsl.exe` as `--distribution`, so your command goes to the distribution you are in rather than the default one.
 
+!!! warning "Quotes do not survive the crossing"
+
+    `wsl.exe` strips the quotes from its own command line before the distribution's shell ever sees it, so an argument containing spaces arrives as several words no matter how it is written. `keycmd npm install` is unaffected, and so is anything else without spaces inside an argument; `keycmd mytool --message 'hello world'` is not, and there is nothing keycmd can do about it from the Windows side.
+
 ## Your credentials have to be told to cross
 
 Your credentials do not come along by themselves, since neither side of the WSL boundary inherits the other's environment. Only the variables listed in [`WSLENV`](https://devblogs.microsoft.com/commandline/share-environment-vars-between-wsl-and-windows/) make the trip, so keycmd adds the variables from your configuration to it. Anything you had already listed in `WSLENV` yourself is kept.
@@ -39,8 +43,8 @@ Your credentials do not come along by themselves, since neither side of the WSL 
 Set the `KEYCMD_WSL` environment variable to override the decision in either direction:
 
 ```bash
-KEYCMD_WSL=0 keycmd 'echo $SECRET'   # stay on the windows side
-KEYCMD_WSL=1 keycmd 'echo $SECRET'   # go through wsl.exe regardless
+KEYCMD_WSL=0 keycmd npm install   # stay on the windows side
+KEYCMD_WSL=1 keycmd npm install   # go through wsl.exe regardless
 ```
 
 `keycmd --verbose` reports which way it went, and what it based that on:

@@ -2,12 +2,11 @@
 
 ```
 ❯ keycmd --help
-usage: keycmd [-h] [-v] [--version] [--detect-backend] [--reset-backend]
-              [--shell]
-              ...
+usage: keycmd [options] [--] [command ...]
 
 positional arguments:
-  command           command to run
+  command           command to run, as separate arguments or as one quoted
+                    string
 
 options:
   -h, --help        show this help message and exit
@@ -18,6 +17,12 @@ options:
   --reset-backend   forget the remembered keyring backend, so the next run
                     searches again
   --shell           spawn a subshell instead of running a command
+
+examples:
+  keycmd npm install              run a command with the credentials exposed
+  keycmd -- ruff --version        -- ends keycmd's own options
+  keycmd 'echo $SECRET | wc -c'   quote it to use your shell's syntax
+  keycmd --shell                  open a subshell with the credentials exposed
 ```
 
 ## Positional arguments
@@ -26,23 +31,37 @@ options:
 
 The command to run with the credentials exposed as environment variables.
 
+Given as separate arguments — the command written the way you would have written it anyway — each is passed on as the word it was, and shell syntax is not interpreted a second time:
+
+```bash
+keycmd npm install
+keycmd mytool --message 'hello world'
+```
+
 Given as a single quoted argument, it is handed to your shell as typed, so the shell interprets it — pipes, redirects and variable expansion included:
 
 ```bash
 keycmd 'echo $SECRET | tr a-z A-Z'
 ```
 
-Given as several arguments, each is passed on as the word it was, and shell syntax is not interpreted a second time:
-
-```bash
-keycmd mytool --message 'hello world'
-```
+Everything after keycmd's own options belongs to the command, so `keycmd pytest --verbose` runs pytest verbosely, while `keycmd --verbose pytest` makes keycmd verbose.
 
 Required, unless `--shell`, `--version`, `--detect-backend` or `--reset-backend` is used. Without one, keycmd exits with `error: missing command argument`.
 
 See [running commands](../guide/running-commands.md) for the full story.
 
 ## Options
+
+### `--`
+
+Ends keycmd's own options: everything after it is the command, even a first word that starts with a dash.
+
+```bash
+keycmd -- npm install
+keycmd -- --my-oddly-named-tool
+```
+
+Optional, and only needed for that first word — keycmd takes the rest of the command line verbatim either way. Only the `--` that ends keycmd's options is removed; any further one is your command's own.
 
 ### `-v`, `--verbose`
 
