@@ -4,6 +4,7 @@ from subprocess import run
 import pytest
 
 from keycmd import __version__
+from keycmd.backend import BACKEND_VAR, recall, remember
 from keycmd.cli import cli, main
 
 # modules that cost more to import than the rest of keycmd together, and
@@ -49,6 +50,57 @@ def test_cli_missing_credential(capfd, local_conf, userprofile, subprocess, os_k
         main(["echo", "foo"])
     assert exc_info.value.args[0] == 1
     assert "MISSING credential" in capfd.readouterr().err
+
+
+def test_cli_detect_backend(capfd, cache_home, monkeypatch, os_keyring):
+    """Searching on purpose, and writing down what turns up"""
+    monkeypatch.delenv(BACKEND_VAR, raising=False)
+    main(["--detect-backend"])
+    assert "remembered keyring backend" in capfd.readouterr().out
+    assert recall() is not None
+
+
+def test_cli_reset_backend(capfd, cache_home):
+    """Forgetting on purpose, so that the next run searches again"""
+    remember("keyring.backends.null.Keyring")
+    main(["--reset-backend"])
+    assert "forgot the remembered keyring backend" in capfd.readouterr().out
+    assert recall() is None
+
+    main(["--reset-backend"])
+    assert "no keyring backend was remembered" in capfd.readouterr().out
+
+
+def test_cli_backend_flags_need_no_command(cache_home):
+    """Neither has any use for a command, or for a configuration to load"""
+    for flag in ("--detect-backend", "--reset-backend"):
+        args = cli.parse_args([flag])
+        assert args.command == []
+
+
+def test_cli_remembers_the_backend(
+    capfd,
+    cache_home,
+    monkeypatch,
+    shell_credentials,
+    local_conf,
+    userprofile,
+    subprocess,
+):
+    """A run that had to search writes the answer down for the next one
+
+    Which is the whole feature, seen from where the user stands: nothing
+    to read, nothing to set, and the search paid for once.
+    """
+    # a machine that already names its backend has nothing to remember,
+    # and this is about the machines that do not
+    monkeypatch.delenv(BACKEND_VAR, raising=False)
+    with pytest.raises(SystemExit) as exc_info:
+        main(["echo", "foo"])
+    assert exc_info.value.args[0] == 0
+    # the command keeps the output to itself, and the note is on disk
+    assert capfd.readouterr().out.strip() == "foo"
+    assert recall() is not None
 
 
 def test_cli_missing_command(capfd, ch_tmpdir, userprofile):

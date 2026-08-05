@@ -13,6 +13,7 @@ from typing import NamedTuple
 import keyring
 import pytest
 
+import keycmd.backend
 import keycmd.conf
 import keycmd.shell
 import keycmd.wsl
@@ -153,6 +154,20 @@ def outside_wsl(monkeypatch):
     monkeypatch.setattr(keycmd.wsl, "IS_WINDOWS", False)
     monkeypatch.delenv("WSL_DISTRO_NAME", raising=False)
     monkeypatch.delenv("WSL_INTEROP", raising=False)
+
+
+@pytest.fixture(autouse=True)
+def cache_home(tmp_path, monkeypatch):
+    """Keep the remembered keyring backend out of the real cache folder
+
+    keycmd writes down the backend it found so that later runs can skip
+    the search, and a test run has no business reading or writing the
+    note the machine it runs on is using. One folder per test, so that a
+    test starts with nothing remembered unless it says otherwise.
+    """
+    home = tmp_path / ".cache"
+    monkeypatch.setattr(keycmd.backend, "CACHE_HOME", home)
+    return home
 
 
 @pytest.fixture

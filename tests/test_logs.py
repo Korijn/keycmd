@@ -30,3 +30,13 @@ def test_logging(capsys, request):
 
     vlog("foo")
     assert capsys.readouterr().out == ""
+
+
+def test_error_hints(capsys):
+    """What went wrong is rarely the same line as what to do about it"""
+    with pytest.raises(SystemExit) as exc_info:
+        error("no", "try this", "or this")
+    assert exc_info.value.args[0] == 1
+    assert capsys.readouterr().err == (
+        "keycmd: error: no\nkeycmd: hint: try this\nkeycmd: hint: or this\n"
+    )

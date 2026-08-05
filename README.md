@@ -157,16 +157,22 @@ The CLI has the following options:
 
 ```
 ❯ keycmd --help
-usage: keycmd [-h] [-v] [--version] [--shell] ...
+usage: keycmd [-h] [-v] [--version] [--detect-backend] [--reset-backend]
+              [--shell]
+              ...
 
 positional arguments:
-  command        command to run
+  command           command to run
 
-optional arguments:
-  -h, --help     show this help message and exit
-  -v, --verbose  enable verbose output, useful for configuration debugging
-  --version      print version info
-  --shell        spawn a subshell instead of running a command
+options:
+  -h, --help        show this help message and exit
+  -v, --verbose     enable verbose output, useful for configuration debugging
+  --version         print version info
+  --detect-backend  search for the keyring backend now and remember it for
+                    later runs
+  --reset-backend   forget the remembered keyring backend, so the next run
+                    searches again
+  --shell           spawn a subshell instead of running a command
 ```
 
 There are two main ways to use the CLI:
@@ -401,7 +407,7 @@ keycmd: merged config:
           'ARTIFACTS_TOKEN_B64': {'b64': True,
                                   'credential': 'korijn@poetry-repository-main',
                                   'username': 'korijn'}}}
-keycmd: keyring backend: <keyring.backends.Windows.WinVaultKeyring object at 0x000001F8C2A1B4D0>
+keycmd: keyring backend: <keyring.backends.Windows.WinVaultKeyring object at 0x000001F8C2A1B4D0> (remembered)
 keycmd: exposing credential korijn@poetry-repository-main with user korijn as environment variable ARTIFACTS_TOKEN (b64: False, format: None)
 keycmd: exposing credential korijn@poetry-repository-main with user korijn as environment variable ARTIFACTS_TOKEN_B64 (b64: True, format: None)
 keycmd: detected shell: C:\Windows\System32\cmd.exe
@@ -419,14 +425,50 @@ See the [third party backends](https://github.com/jaraco/keyring/#third-party-ba
 
 Left to itself, keyring works out which backend to use by loading every backend registered by every installed package and picking the most suitable one. That search runs on each `keycmd` invocation and, on a machine with a few packages installed, costs more time than the whole of the rest of a `keycmd` run put together.
 
-If that shows up in your shell, name the backend you already know you want, and keyring will load that one instead of going looking:
+The answer, though, is the same every time until the packages on your machine change. So keycmd writes it down the first time it needs a credential, and loads that backend by name on every run after, which on the machine this was measured on takes a run from 0.156s to 0.085s. There is nothing to configure and nothing to read; it just gets faster after the first run.
+
+You can watch it happen with `--verbose`, which says where the backend came from:
+
+```
+keycmd: keyring backend: keyring.backends.SecretService.Keyring (found in 0.12s)   # the first run
+keycmd: keyring backend: keyring.backends.SecretService.Keyring (remembered)       # every run after
+```
+
+The note lives with the rest of your cached files — `%LOCALAPPDATA%\keycmd\backend` on Windows, `~/Library/Caches/keycmd/backend` on macOS, and `$XDG_CACHE_HOME/keycmd/backend` (usually `~/.cache`) on Linux — and deleting it costs you nothing but one slow run.
+
+keycmd only trusts the note as far as it can check it. If the backend it names has been uninstalled, or is no longer usable because the daemon behind it is not running, the run searches again and writes down what it finds instead. What it cannot notice by itself is a backend that still loads but is no longer the one you want — you installed a better one, or removed a package and want the runner-up. That is what these two are for:
+
+```bash
+keycmd --detect-backend   # search now, and remember what turns up
+keycmd --reset-backend    # forget it, so the next run searches again
+```
+
+```
+❯ keycmd --detect-backend
+keycmd: remembered keyring backend keyring.backends.SecretService.Keyring, found in 0.12s
+```
+
+If you would rather take the whole thing into your own hands, keyring's own `PYTHON_KEYRING_BACKEND` still works and outranks anything keycmd remembers:
 
 ```bash
 # in your shell profile; use the backend your platform actually uses
 export PYTHON_KEYRING_BACKEND=keyring.backends.SecretService.Keyring
 ```
 
-`keyring --list-backends` prints the names to choose from, and `keycmd --verbose` will tell you which one ends up being used. The setting is keyring's own, so it applies to everything else using keyring too.
+`keyring --list-backends` prints the names to choose from. The setting is keyring's own, so it applies to everything else using keyring too, and with it set keycmd has nothing to remember and says so if you ask it to.
+
+### No backend at all
+
+If keyring finds no backend it can use, there is nowhere for keycmd to read credentials from, and it says so rather than failing on the first lookup:
+
+```
+❯ keycmd 'npm install'
+keycmd: error: keyring has no backend to read credentials from
+keycmd: hint: install one for this platform, or name one you have with PYTHON_KEYRING_BACKEND
+keycmd: hint: see https://github.com/jaraco/keyring#third-party-backends
+```
+
+Inside a WSL distribution this usually means the distro's keyring daemon is not running, which is what the [WSL installation](#wsl-installation) instructions above are for; keycmd points you there when it notices it is running in one. Nothing is written down in this case, so there is nothing to reset once you have fixed it.
 
 ## Development
 
