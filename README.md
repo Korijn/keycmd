@@ -1,537 +1,68 @@
-# keycmd
+# keycmd 🔑
 
-[![CI](https://github.com/clinicalgraphics/keycmd/actions/workflows/ci.yml/badge.svg)](https://github.com/clinicalgraphics/keycmd/actions/workflows/ci.yml)
-[![PyPI version ](https://badge.fury.io/py/keycmd.svg)
-](https://badge.fury.io/py/keycmd)
+[![CI](https://github.com/Korijn/keycmd/actions/workflows/ci.yml/badge.svg)](https://github.com/Korijn/keycmd/actions/workflows/ci.yml)
+[![PyPI version](https://badge.fury.io/py/keycmd.svg)](https://badge.fury.io/py/keycmd)
 
-Prefix any command with `keycmd` to safely source your secrets and credentials from the OS keyring, instead of risky `.env` files (or worse 🙈). Common applications include npm, pip, poetry, docker, docker compose and kubectl!
+**Prefix any command with `keycmd` to source your secrets from the OS keyring**, instead of risky `.env` files (or worse 🙈). Your credentials are exposed as environment variables for exactly one command, and nowhere else.
 
-Supports Windows, macOS and Linux.
+📖 **[Documentation](https://korijn.github.io/keycmd)** · 📦 **[PyPI](https://pypi.org/project/keycmd/)** · 🚀 **[Quick Start](https://korijn.github.io/keycmd/getting-started/quick-start/)**
 
-## About
+Supports Windows, macOS and Linux. Common applications include npm, pip, uv, poetry, docker, docker compose and kubectl.
 
-The main functionality of `keycmd` is to load secrets from your OS keyring and expose them as environment variables for the duration of a single shell command or alternatively for the lifetime of a subshell.
-
-This enables you to store sensitive data such as authentication tokens and passwords in your OS keyring, so you no longer need to rely on insecure practises such as `.env` files, or pasting secrets into your terminal. 😱
-
-The most common use case is to load credentials for package managers such as pip and npm when using private package indexes, such as Azure Artifact Feeds. Another common use case is docker build secrets.
-
-## Installation
-
-`keycmd` requires Python 3.13 or newer.
-
-> **Note**
-> If you're intending to install `keycmd` in a WSL or pyenv environment, you'll have to skip ahead to the specific installation instructions for those environments.
-
-### Global installation
-
-Since `keycmd` is a command line tool, the recommended way to install it is with [uv](https://docs.astral.sh/uv/):
+## Quick start
 
 ```bash
 uv tool install keycmd
 ```
 
-This installs `keycmd` into its own isolated environment and puts the executable on your `PATH`. Alternatively, install it from pypi using `pip install keycmd`, or whatever alternative python package manager you prefer.
-
-Note that the executable `keycmd` has to be installed to a folder that is on your `PATH` environment variable, or the command won't be available globally. Assuming you were able to run `pip` just now, the `keycmd` executable should end up in the exact same location and everything should be fine.
-
-To verify keycmd is installed and available, run `keycmd --version`.
-
-### pyenv installation
-
-Now, if you're using pyenv, you're going to have to jump through a few hoops since keycmd needs to be installed globally, which flies directly into the face of what pyenv is trying to accomplish.
-
-This guide assumes you've also installed [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv), in order to get you the cleanest of setups. ✨
-
-> **Note**
-> These pyenv instructions are for pyenv on Linux and MacOS. If you are using pyenv-win on Windows, these instructions are most likely not 100% compatible with your setup.
-
-Run the following commands one by one to install keycmd into its own standalone environment:
-
-```bash
-# run the following commands one by one
-pyenv virtualenv 3.13 keycmd
-pyenv activate keycmd
-pip install keycmd
-pathToKeycmd=$(python -c 'import sys; from pathlib import Path; print(Path(sys.executable).parent / "keycmd")')
-pyenv deactivate
-mkdir -p $HOME/.local/bin
-ln -s $pathToKeycmd $HOME/.local/bin/keycmd
-```
-
-Finally, edit your `~/.bashrc` file (or whatever shell profile you use) to include `~/.local/bin` in your `PATH` variable:
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-> **Note**
-> This line may already be in place in your `~/.bashrc`, for example, if you installed poetry! It's a common trick used to expose specific binaries on `PATH` when they are in folders that also include binaries that should _not_ be exposed on `PATH`.
-
-To verify keycmd is installed and available, run `keycmd --version`.
-
-### WSL installation
-
-If you're using WSL, you'll run into a wall when you first try to use keycmd. That's because keycmd uses the keyring library to connect to OS keyrings, and keyring will attempt to connect to your linux distro's (probably Ubuntu) keyring background service, which by default isn't actually running in a WSL environment!
-
-If you did actually set up your linux distro's keyring background service, that's fine, you can continue using it and don't need to perform any additional steps.
-
-> **Note**
-> Just because you installed WSL on your system, does not mean you are actually working in WSL. Think about this for a moment; are you using Python from Windows or from WSL? The instructions here are only necessary if you are actually working in WSL.
-
-So, if you would like keyring to connect from the WSL environment to your Windows Credential Manager instead, continue with the next steps.
-
-You have to install keycmd according to the above instructions (globally, or with pyenv) **in Windows**, not in WSL. Then, assuming `keycmd` is on your Windows `PATH`, it should now be available in WSL as well!
-
-Keep in mind that keycmd is a Windows process in this setup, so left to its own devices it would run your command in a Windows shell, and `keycmd --shell` would open one. It doesn't: when keycmd notices it was called from a distro, it runs your command back inside that distro through `wsl.exe`, and `keycmd --shell` opens a shell there. If you have more than one distro installed, and you are working somewhere on the distro's own file system, keycmd targets the distro you are in rather than the default one.
-
-Your credentials do not come along by themselves, since neither side of the WSL boundary inherits the other's environment. Only the variables listed in [`WSLENV`](https://devblogs.microsoft.com/commandline/share-environment-vars-between-wsl-and-windows/) make the trip, so keycmd adds the variables from your configuration to it.
-
-If keycmd gets it wrong, set the `KEYCMD_WSL` environment variable to `0` to keep it on the Windows side, or to `1` to send it through `wsl.exe` regardless. `keycmd --verbose` reports which way it went, and what it based that on.
-
-### Up- and downgrading
-
-If at a later point in time, you want to install a different version of keycmd, just use pip again.
-
-> **Note**
-> If you're using pyenv, make sure to activate the virtual environment first with `pyenv activate keycmd`. Don't forget to `pyenv deactivate` afterwards.
-
-* To upgrade to latest: `pip install -U keycmd`
-* To install a specific version: `pip install keycmd==0.6.0`
-
-## Quickstart
-
-Now that keycmd is installed, we can perform a quick test to see how it works!
-
-Let's add a new key to our OS keyring, and then see how we can expose it with keycmd.
-
-For the purpose of this example, use `my-secret` as the credential name and `my-username` as the... username. I used `foobar` as the password.
-
-### Windows
-On Windows, that means clicking Start and typing "Credential Manager" to find the app. Click the Windows Credentials tab, and click "Add a generic credential". See the screenshots below.
-
-![Credential Manager](docs/wcm.png)
-
-![Add Key](docs/wcm-add-key.png)
-
-### MacOS
-On macOS, open Keychain Access (Command-Space bar, type `keychain access`), then press Command-N to add a 
-new password item. Please note that Account Name holds the username.
-
-![Add New Password Item](docs/keychain-access-new-password-item.png)
-
-### Linux
-On Linux, the easiest way to add a credential is via python's `keyring` package. Manually adding a password via the GUI does not always allow you to set a username, which is problematic with `keycmd`'s internal `keyring.get_password()` call. Here an example of setting a password:
-
-```python
->>> import keyring
->>> keyring.set_password("my-secret", "my-username", "foobar")
-```
-
-after which it appears in the credential manager. This approach should generalize for other distributions (and even other OS's). On Ubuntu `seahorse` is used, which now should show the new password:
-![Seahorse](docs/seahorse.png)
-
-### Configuration
-Now, create a `.keycmd` config file in your user home folder. Put the following configuration in the file and save:
-
-```toml
-[keys]
-SECRET = { credential = "my-secret", username = "my-username" }
-```
-
-Finally, open a terminal and run a command to print the secret, so we can see if it worked. That's going to look different depending on what shell you're using, so here's a couple examples:
-
-* Cmd: `keycmd echo %SECRET%`
-* Powershell: `keycmd 'echo $env:SECRET'`
-* Bash: `keycmd 'echo $SECRET'`
-
-You should see the text `foobar` being printed to the terminal.
-
-You've successfully set up keycmd! 👏
-
-See the [advanced configuration example](#advanced-example) below for a more involved usecase for keycmd, where poetry, npm and docker-compose are all put together.
-
-## Usage
-
-The CLI has the following options:
-
-```
-❯ keycmd --help
-usage: keycmd [-h] [-v] [--version] [--detect-backend] [--reset-backend]
-              [--shell]
-              ...
-
-positional arguments:
-  command           command to run
-
-options:
-  -h, --help        show this help message and exit
-  -v, --verbose     enable verbose output, useful for configuration debugging
-  --version         print version info
-  --detect-backend  search for the keyring backend now and remember it for
-                    later runs
-  --reset-backend   forget the remembered keyring backend, so the next run
-                    searches again
-  --shell           spawn a subshell instead of running a command
-```
-
-There are two main ways to use the CLI:
-
-* `keycmd 'your command'`
-* `keycmd --shell`
-
-The first is the most preferred method, since your secrets will only be exposed as environment variables during a one-off command. The latter is less preferable, but can be convenient if you are debugging some process that depends on the credentials you are exposing.
-
-Quoting the whole command as one argument is what lets you use your shell's syntax inside it, as in `keycmd 'echo $SECRET | tr a-z A-Z'`: keycmd hands that line to your shell exactly as you typed it, and your shell does the rest.
-
-You can also write the command out as separate arguments, and then keycmd keeps them separate:
-
-```bash
-# arrives as a single argument, spaces and all
-keycmd mytool --message 'hello world'
-```
-
-Since each argument is passed on as the word it was, your shell's syntax is *not* interpreted a second time in this form. If you want `$SECRET` expanded, either let your own shell expand it, or use the single argument form above.
-
-## Configuration
-
-> **Note**
-> if you are having trouble configuring keycmd, refer to section [debugging configuration](#debugging-configuration).
-
-### Locations
-
-Configuration can be stored in three places (where `~` is the user home folder and `.` is the current working directory when calling `keycmd`):
-
-- `~/.keycmd`
-- all `.keycmd` found while walking file system up from `.`
-- first `pyproject.toml` found while walking file system up from `.`
-
-> **Note:**
-> The search for `.keycmd` and `pyproject.toml` will stop at the root of a git repository, and before the user home folder, to ensure your configuration can be applied locally to subtrees of your filesystem.
-
-Configuration files are loaded and merged in the listed order.
-
-### Fields
-
-The options schema is defined as follows:
-
-* `keys`: dict
-  * `{key_name}`: dict - an environment variable will be created with this name
-    * `credential`: str - the name of the credential in your keyring
-    * `username`: str - the username associated with the credential in your keyring
-    * `b64`: bool, optional - set to `true` to apply base64 encoding
-    * `format`: str, optional - apply a format string (applied before base64 encoding)
-* `aliases`: dict, optional
-  * `{alias_name}`: dict - an environment variable will be created with this name
-    * `key`: str - the key that should be aliased
-    * `b64`: bool, optional - see `keys.{key_name}.b64`
-    * `format`: str, optional - see `keys.{key_name}.format`
-
-### Format strings
-
-The format string allows you to preprocess the credential before it is exposed as an environment variable.
-
-The format string is processed using Python's built-in [`str.format`](https://docs.python.org/3/library/stdtypes.html#str.format) so you have access to all formatting functionality supported by that function.
-
-Three variables are available for use in the format string:
-
-* `credential`
-* `username`
-* `password`
-
-So for example you can put together a basic auth header with a configuration string like this:
-
-```toml
-[keys]
-MY_TOKEN = { credential = "MY_TOKEN", username = "azure", format = "{username}:{password}", b64 = true }
-```
-
-### Aliases
-
-Aliases can be used to expose the same secret in multiple forms.
-
-For example, you may have a single Personal Access Token for Azure DevOps, and wish to use the same token for `pip`, `npm` and the REST API. `pip` wants you to provide the token in plain text, `npm` prefers it to be base64-encoded and the REST API is expecting a basic auth header. Aliases make this easy:
-
-```toml
-[keys]
-MY_TOKEN = { credential = "azure_secret", username = "azure" }
-
-[aliases]
-MY_TOKEN_B64 = { key = "MY_TOKEN", b64 = true }
-MY_TOKEN_BASICAUTH = { key = "MY_TOKEN", format = "{username}:{password}", b64 = true }
-```
-
-### pyproject.toml example
-
-You can also store your configuration in `pyproject.toml`, by prefixing the keys with `tool.keycmd`. So if we were to convert the previous example it would look like this:
-
-```toml
-[tool.keycmd.keys]
-MY_TOKEN = { credential = "azure_secret", username = "azure" }
-
-[tool.keycmd.aliases]
-MY_TOKEN_B64 = { key = "MY_TOKEN", b64 = true }
-MY_TOKEN_BASICAUTH = { key = "MY_TOKEN", format = "{username}:{password}", b64 = true }
-```
-
-## OpenAI example
-
-With OpenAI, you're instructed to [use an API key](https://github.com/openai/openai-python#usage) to authenticate with their APIs. When you put that string in a `.env` file, or directly in your code, you risk sharing your API key with the world! 🙅‍♂️
-
-Instead, just put it in your OS keyring, and expose it with keycmd when you run your python scripts or jupyter notebooks.
-
-For example, if you add it to your OS keyring under the name `my-openai-token` and `your-username`, you would use the following `.keycmd` configuration:
+Store a credential in your OS keyring, name it in a `.keycmd` file:
 
 ```toml
 [keys]
 OPENAI_API_KEY = { credential = "my-openai-token", username = "your-username" }
 ```
 
-Now you can run any OpenAI script by just prefixing your commands with `keycmd`. For example:
+...and run anything that needs it:
 
 ```bash
 keycmd 'python my_openai_script.py'
 ```
 
-Or a jupyter notebook:
+The variable exists inside that command, and nowhere else — no `.env` file, no secret pasted into your terminal, nothing left behind afterwards. 😱 → 😌
+
+Continue with the [Quick Start tutorial](https://korijn.github.io/keycmd/getting-started/quick-start/), which walks through storing the credential on each platform.
+
+## Why keycmd?
+
+* **Your secrets stay in the keyring.** The Windows Credential Manager, the macOS keychain and the Linux secret service already exist to keep credentials safe — keycmd reads from them, so a checked-out repository never has to contain a token.
+* **Exposed for one command only**, or for a subshell with `keycmd --shell` when you're debugging.
+* **Configuration that follows your project**, merged from your home folder, from `.keycmd` files up the directory tree, and from `pyproject.toml`.
+* **One credential, many shapes.** Format strings and aliases expose the same secret as plain text, base64, or a basic auth header — whatever each tool insists on.
+* **Any keyring backend**, through [keyring](https://github.com/jaraco/keyring), with no special configuration.
+
+## Documentation
+
+Everything lives at **[korijn.github.io/keycmd](https://korijn.github.io/keycmd)**:
+
+* [Installation](https://korijn.github.io/keycmd/getting-started/installation/) — globally, under pyenv, or from WSL
+* [Running commands](https://korijn.github.io/keycmd/guide/running-commands/) — the two invocation forms, quoting, subshells
+* [Configuration](https://korijn.github.io/keycmd/guide/configuration/) — where it lives, keys, format strings, aliases
+* [Keyring backends](https://korijn.github.io/keycmd/guide/keyring-backends/) — third party backends, and keycmd's startup time
+* [WSL](https://korijn.github.io/keycmd/guide/wsl/) — reaching the Windows Credential Manager from a distribution
+* [Troubleshooting](https://korijn.github.io/keycmd/guide/troubleshooting/) — start with `keycmd --verbose`
+* [Examples](https://korijn.github.io/keycmd/examples/openai/) — an OpenAI API key, and one Azure DevOps token shared by poetry, npm and docker compose
+* [Reference](https://korijn.github.io/keycmd/reference/cli/) — every flag, environment variable and configuration field
+
+## Contributing
+
+Issues and pull requests are welcome. See [Contributing](https://korijn.github.io/keycmd/development/contributing/) and [Testing](https://korijn.github.io/keycmd/development/testing/) to get set up:
 
 ```bash
-keycmd 'jupyter notebook'
-```
-
-That's all! 🤘 Now you can rest easily, knowing your tokens are safe. 🛌💤
-
-## Advanced example
-
-This is an example configuration for Poetry, npm and docker-compose. It should inspire you to see the possibilities keycmd provides thanks to its configuration system.
-
-In this case, we are authenticating with an Azure DevOps Personal Acces Token to an Azure Artifacts Feed which serves both python and node.js packages.
-
-Let's begin by creating a Packaging (Read) token in Azure DevOps:
-
-![Personal access tokens](docs/create-pat.png)
-
-Make sure to check the Packaging (Read) permission, it's the only permission we need for this example.
-
-![PAT Permissions](docs/create-pat-2.png)
-
-In this case, we won't enter it into the OS keyring manually. We'll [let Poetry handle it](https://python-poetry.org/docs/repositories/#configuring-credentials). Let's review our `pyproject.toml` file:
-
-```toml
-[tool.poetry]
-name = "my-project"
-version = "1.0.0"
-description = ""
-authors = ["My Name <my-name@my-organization.com>"]
-
-[[tool.poetry.source]]
-name = "main"
-url = "https://pkgs.dev.azure.com/my-organization/_packaging/main/pypi/simple/"
-priority = "default"
-
-[tool.poetry.dependencies]
-python = "~3.9"
-
-[build-system]
-requires = ["poetry>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-```
-
-Looks like our poetry source is named `main`, so let's run the appropriate command:
-
-`poetry config http-basic.main <username> <personal-access-token>`
-
-Poetry will create an entry in the OS keyring, and when you run `poetry install` it will automatically authenticate using that credential. No need for `keycmd` here!
-
-Next, we're going to piggyback off this credential with keycmd, to reuse it for npm, and for docker-compose. That way, we only have 1 credential to manage (that means updating it when it expires).
-
-Look up the new credential in your OS keyring, and store the following configuration in a `.keycmd` file. Of course, **review your OS keyring and adjust your configuration to match the credential name and username!**
-
-```toml
-[keys]
-PAT = { credential = "credential-name", username = "your-username" }
-PAT_B64 = { credential = "credential-name", username = "your-username", b64 = true }
-```
-
-In this example, we are exposing the same credential twice:
-
-* As the environment variable `PAT`
-* Again but with base64 encoding applied as the environment variable `PAT_B64`
-
-This is important, because npm requires that we supply the token with base64 encoding, but other tools do not.
-
-For my npm project, I have a [`.npmrc` file](https://docs.npmjs.com/cli/v7/configuring-npm/npmrc) with the following contents:
-
-```
-registry=https://pkgs.dev.azure.com/my_organization/_packaging/main/npm/registry/
-always-auth=true
-//pkgs.dev.azure.com/my_organization/_packaging/main/npm/registry/:username=dev
-//pkgs.dev.azure.com/my_organization/_packaging/main/npm/registry/:_password=${PAT_B64}
-//pkgs.dev.azure.com/my_organization/_packaging/main/npm/registry/:email=email
-//pkgs.dev.azure.com/my_organization/_packaging/main/npm/:username=dev
-//pkgs.dev.azure.com/my_organization/_packaging/main/npm/:_password=${PAT_B64}
-//pkgs.dev.azure.com/my_organization/_packaging/main/npm/:email=email
-```
-
-Now, I can set up my `node_modules` just by calling `keycmd 'npm install'`! 🚀
-
-> **Note**
-> npm will complain if you make any calls such as `npm run [...]` without the environment variable set. 🙄 You can set them to the empty string to make npm shut up. I use `export PAT_B64=` (or `setx PAT_B64=` on Windows).
-
-Additionally, I also have a docker-compose file in this project which is configured as follows:
-
-```yml
-secrets:
-  token:
-    environment: PAT
-  token_b64:
-    environment: PAT_B64
-```
-
-When I call `keycmd 'docker compose build'` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/). 👌
-
-## Debugging configuration
-
-If you're not getting the results you expected, use the `-v` flag
-to debug your configuration. Keycmd will verbosely tell you about all the steps it's taking.
-
-Here's an example using cmd.exe, otherwise, the command would be `poetry run keycmd -v 'echo $ARTIFACTS_TOKEN_B64'`:
-
-```
-❯ poetry run keycmd -v echo %ARTIFACTS_TOKEN_B64%
-keycmd: loading config file C:\Users\kvang\.keycmd
-keycmd: loading config file C:\Users\kvang\dev\keycmd\pyproject.toml
-keycmd: merged config:
-{'keys': {'ARTIFACTS_TOKEN': {'credential': 'korijn@poetry-repository-main',
-                              'username': 'korijn'},
-          'ARTIFACTS_TOKEN_B64': {'b64': True,
-                                  'credential': 'korijn@poetry-repository-main',
-                                  'username': 'korijn'}}}
-keycmd: keyring backend: <keyring.backends.Windows.WinVaultKeyring object at 0x000001F8C2A1B4D0> (remembered)
-keycmd: exposing credential korijn@poetry-repository-main with user korijn as environment variable ARTIFACTS_TOKEN (b64: False, format: None)
-keycmd: exposing credential korijn@poetry-repository-main with user korijn as environment variable ARTIFACTS_TOKEN_B64 (b64: True, format: None)
-keycmd: detected shell: C:\Windows\System32\cmd.exe
-keycmd: running command: ['C:\\Windows\\System32\\cmd.exe', '/C', 'echo', '%ARTIFACTS_TOKEN_B64%']
-aSdtIG5vdCB0aGF0IHN0dXBpZCA6KQ==
-```
-
-## Note on keyring backends
-
-Since keycmd uses keyring as its backend, you're not limited to just working with OS keyrings. 🤯 Any keyring backend will work with keycmd. No special configuration required!
-
-See the [third party backends](https://github.com/jaraco/keyring/#third-party-backends) list for all options.
-
-### Startup time
-
-Left to itself, keyring works out which backend to use by loading every backend registered by every installed package and picking the most suitable one. That search runs on each `keycmd` invocation and, on a machine with a few packages installed, costs more time than the whole of the rest of a `keycmd` run put together.
-
-The answer, though, is the same every time until the packages on your machine change. So keycmd writes it down the first time it needs a credential, and loads that backend by name on every run after, which on the machine this was measured on takes a run from 0.156s to 0.085s. There is nothing to configure and nothing to read; it just gets faster after the first run.
-
-You can watch it happen with `--verbose`, which says where the backend came from:
-
-```
-keycmd: keyring backend: keyring.backends.SecretService.Keyring (found in 0.12s)   # the first run
-keycmd: keyring backend: keyring.backends.SecretService.Keyring (remembered)       # every run after
-```
-
-The note lives with the rest of your cached files — `%LOCALAPPDATA%\keycmd\backend` on Windows, `~/Library/Caches/keycmd/backend` on macOS, and `$XDG_CACHE_HOME/keycmd/backend` (usually `~/.cache`) on Linux — and deleting it costs you nothing but one slow run.
-
-keycmd only trusts the note as far as it can check it. If the backend it names has been uninstalled, or is no longer usable because the daemon behind it is not running, the run searches again and writes down what it finds instead. What it cannot notice by itself is a backend that still loads but is no longer the one you want — you installed a better one, or removed a package and want the runner-up. That is what these two are for:
-
-```bash
-keycmd --detect-backend   # search now, and remember what turns up
-keycmd --reset-backend    # forget it, so the next run searches again
-```
-
-```
-❯ keycmd --detect-backend
-keycmd: remembered keyring backend keyring.backends.SecretService.Keyring, found in 0.12s
-```
-
-If you would rather take the whole thing into your own hands, keyring's own `PYTHON_KEYRING_BACKEND` still works and outranks anything keycmd remembers:
-
-```bash
-# in your shell profile; use the backend your platform actually uses
-export PYTHON_KEYRING_BACKEND=keyring.backends.SecretService.Keyring
-```
-
-`keyring --list-backends` prints the names to choose from. The setting is keyring's own, so it applies to everything else using keyring too, and with it set keycmd has nothing to remember and says so if you ask it to.
-
-### No backend at all
-
-If keyring finds no backend it can use, there is nowhere for keycmd to read credentials from, and it says so rather than failing on the first lookup:
-
-```
-❯ keycmd 'npm install'
-keycmd: error: keyring has no backend to read credentials from
-keycmd: hint: install one for this platform, or name one you have with PYTHON_KEYRING_BACKEND
-keycmd: hint: see https://github.com/jaraco/keyring#third-party-backends
-```
-
-Inside a WSL distribution this usually means the distro's keyring daemon is not running, which is what the [WSL installation](#wsl-installation) instructions above are for; keycmd points you there when it notices it is running in one. Nothing is written down in this case, so there is nothing to reset once you have fixed it.
-
-## Development
-
-This project uses [uv](https://docs.astral.sh/uv/) for dependency management, [ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [ty](https://docs.astral.sh/ty/) for type checking.
-
-The `keycmd` package is fully annotated and ships a `py.typed` marker, so the types are available to anything that imports it. Ruff's `ANN` rules keep it that way; the test suite is exempt.
-
-```bash
-# create the virtual environment and install all dependencies
 uv sync
-
-# install the git hooks that run the checks below on every commit
 uv run pre-commit install
-
-# lint, format, typecheck and test
-uv run ruff check --fix
-uv run ruff format
-uv run ty check
 uv run pytest tests
 ```
 
-### Testing
+## License
 
-CI runs the test suite on Windows, macOS and Linux on the latest Python, plus one job on the oldest supported Python to catch anything newer than it allows. The suite adapts to the platform it runs on: it exercises every shell of the platform that is installed (`sh`, `bash` and `zsh` on posix, `cmd` and `powershell` on Windows, and `pwsh` on either, since it installs everywhere and quotes its own way), and it skips the process replacement tests on Windows, which has no `execvpe`.
-
-The tests that read and write credentials need a real OS keyring that can be unlocked without user interaction. They are skipped with a message if there is no such keyring, so the rest of the suite still runs. Set `KEYCMD_REQUIRE_OS_KEYRING=1` to turn those skips into failures instead; CI sets it so that a broken keyring setup can't quietly reduce the coverage of a run.
-
-* **Windows**: the credential manager is available to your session out of the box, no setup needed.
-* **macOS**: your login keychain works as long as it is unlocked. CI instead creates a throwaway keychain and makes it the default:
-
-  ```bash
-  security create-keychain -p keycmd-test keycmd-test.keychain
-  security set-keychain-settings keycmd-test.keychain
-  security unlock-keychain -p keycmd-test keycmd-test.keychain
-  security list-keychains -d user -s keycmd-test.keychain login.keychain
-  security default-keychain -s keycmd-test.keychain
-  ```
-
-* **Linux**: the secret service is bound to a d-bus session, so the tests have to run inside one, with an unlocked keyring daemon (install `gnome-keyring` and `dbus-x11` first):
-
-  ```bash
-  dbus-run-session -- bash -c '
-    printf "%s" keycmd-test | gnome-keyring-daemon --unlock --components=secrets
-    uv run pytest tests
-  '
-  ```
-
-### Testing WSL
-
-The [WSL setup](#wsl-installation) has two halves. Working *inside* WSL, keycmd is a posix process like any other, talking to whichever keyring backend the distro provides; that is the Linux job above, keyring daemon and all. The other half, calling the Windows install of keycmd from a WSL shell to reach the Windows credential manager, crosses the interop boundary, and that is what `tests/test_wsl.py` covers: a credential in the credential manager, a shell inside WSL, and the Windows install of keycmd in between.
-
-Everything about that boundary that can be decided without a Windows machine is in `tests/test_wsl_interop.py` instead, and runs everywhere: which process tree and working directory mean keycmd was called from a distro, the command lines it builds for `wsl.exe`, and the `WSLENV` that carries the credentials across.
-
-The end to end tests are opt in, because installing WSL takes a CI job of its own. On a Windows machine that has WSL installed:
-
-```powershell
-$env:KEYCMD_TEST_WSL = 1
-uv run pytest tests/test_wsl.py
-```
-
-If you would rather not involve your OS keyring at all, point keyring at a file-based backend:
-
-```bash
-uv run --with keyrings.alt pytest tests
-# with PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring set in your environment
-```
+[MIT](LICENSE)

@@ -1,6 +1,6 @@
 """Reaching a WSL distribution from the windows install of keycmd
 
-The README tells WSL users to install keycmd on windows, so that keyring
+The docs tell WSL users to install keycmd on windows, so that keyring
 talks to the windows credential manager instead of a keyring daemon inside
 the distribution. That leaves keycmd a windows process with a windows idea
 of a shell: asked for a subshell it opens cmd, and asked for a command it
