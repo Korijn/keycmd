@@ -45,8 +45,17 @@ VARNAME = "KEYCMD_TEST"
 
 
 def pytest_report_header(config):
-    """Report which keyring backend the run picked up"""
-    return f"keyring backend: {keyring.get_keyring()}"
+    """Report what this run picked up, both of which vary per machine
+
+    Which shells a run covers is otherwise only visible in the ids of the
+    tests that failed, so a run where they all pass does not say whether a
+    shell was exercised or simply absent.
+    """
+    shells = ", ".join(shell.name for shell in installed_shells())
+    return [
+        f"keyring backend: {keyring.get_keyring()}",
+        f"shells exercised: {shells or 'none'}",
+    ]
 
 
 @dataclass(frozen=True)
