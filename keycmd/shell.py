@@ -65,6 +65,13 @@ def quote(shell_name: str, arg: str) -> str:
     that needs quoting may not survive one intact. An argument that needs
     no quoting is untouched, so the common command is unaffected either
     way.
+
+    Quoting an argument is not always enough to deliver it. Windows
+    powershell passes arguments to a native command the way it always
+    has, which drops an embedded double quote and an empty argument no
+    matter how they are written; powershell 7.3 fixed that, and pwsh
+    carries both. cmd reaches a command through the windows command line,
+    which cannot hold a newline at all.
     """
     quoted = shlex.quote(arg)
     if shell_name not in POWERSHELL or quoted == arg:
