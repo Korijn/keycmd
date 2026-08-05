@@ -95,7 +95,7 @@ always-auth=true
 Now I can set up my `node_modules` just by calling:
 
 ```bash
-keycmd 'npm install'
+keycmd npm install
 ```
 
 🚀
@@ -116,4 +116,4 @@ secrets:
     environment: PAT_B64
 ```
 
-When I call `keycmd 'docker compose build'` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/). 👌
+When I call `keycmd docker compose build` these two variables are exposed by keycmd and subsequently they are available as [docker compose build secrets](https://docs.docker.com/compose/use-secrets/). 👌

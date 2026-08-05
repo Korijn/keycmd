@@ -50,7 +50,17 @@ This says: look up the credential `my-secret` for user `my-username`, and expose
 
 ## 3. Run a command
 
-Open a terminal and run a command that prints the secret. That looks different depending on the shell you use:
+Open a terminal and put `keycmd` in front of the command you want the secret to reach. That is all there is to it, and it is how you will use keycmd for real:
+
+```bash
+keycmd npm install
+keycmd docker compose up
+keycmd pytest
+```
+
+The tools you run read their credentials from the environment themselves, and keycmd is what puts them there.
+
+To check your setup right now, print the secret instead. That is the one thing that *does* need quotes, since a variable written in your command line is expanded by your own shell — before keycmd has set it:
 
 === "bash / zsh"
 
@@ -78,11 +88,11 @@ You've successfully set up keycmd! 👏
 
 keycmd read your configuration, looked `my-secret` up in your OS keyring, put the password in the environment as `SECRET`, and handed that environment to your shell along with your command. When the command finished, the variable went with it: your own shell never had it.
 
-Note the quotes in the bash and PowerShell examples. Quoting the whole command as one argument is what lets *your command's shell* expand `$SECRET`, rather than your own shell expanding it before keycmd ever sees it. See [Running commands](../guide/running-commands.md) for the details.
+Note the quotes in the bash and PowerShell examples. Quoting the whole command as one argument is what lets *your command's shell* expand `$SECRET`, rather than your own shell expanding it into nothing beforehand. (`cmd` is the exception: it leaves an undefined `%SECRET%` alone, so it survives the trip unquoted.) Commands that read the environment themselves — which is nearly all of them — need none of this. See [Running commands](../guide/running-commands.md) for the details.
 
 ## Where to go next
 
-* [Running commands](../guide/running-commands.md) — the two ways to invoke keycmd, quoting, and subshells.
+* [Running commands](../guide/running-commands.md) — prefixing a command, quoting one, and subshells.
 * [Configuration](../guide/configuration.md) — where configuration lives, and everything you can put in it.
 * [Examples](../examples/openai.md) — an OpenAI API key, and a real world setup where poetry, npm and docker compose share a single Azure DevOps token.
 * [Troubleshooting](../guide/troubleshooting.md) — if any of the above did not go as planned, `keycmd --verbose` will tell you why.

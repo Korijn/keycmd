@@ -29,7 +29,7 @@ That output answers, in order, the four questions a misbehaving run usually come
 * **Which backend answered?** See [keyring backends](keyring-backends.md).
 * **What was actually run?** Including the shell, and the exact argument vector handed to it.
 
-The example above uses `cmd.exe`; in bash or PowerShell the command would be quoted as one argument, as in `keycmd -v 'echo $ARTIFACTS_TOKEN_B64'`.
+The example above echoes a variable, which is why the command is written out for `cmd.exe` rather than prefixed the usual way; in bash or PowerShell it would be quoted as one argument, as in `keycmd -v 'echo $ARTIFACTS_TOKEN_B64'`. See [running commands](running-commands.md).
 
 ## Common problems
 
@@ -48,7 +48,15 @@ keycmd echo $SECRET    # your shell expands $SECRET — before keycmd sets it
 keycmd 'echo $SECRET'  # the shell keycmd starts expands it — correct
 ```
 
-Quote the whole command, so that the shell keycmd starts is the one interpreting it. See [running commands](running-commands.md).
+Quote the whole command, so that the shell keycmd starts is the one interpreting it. This only comes up when you write the credential into the command line yourself; a tool that reads it from its own environment needs nothing but `keycmd` in front of it. See [running commands](running-commands.md).
+
+### `sh: --: invalid option`, or `--: command not found`
+
+Your keycmd is old enough to pass a leading `--` on to the shell as the first word of the command. Upgrade, or leave the `--` out — `keycmd npm install` works on every version.
+
+### keycmd took my command's `--verbose` (or `--version`, or `-v`)
+
+Only the options *before* your command are keycmd's; everything from the first word of the command onwards is passed on untouched. `keycmd --verbose pytest` makes keycmd verbose, `keycmd pytest --verbose` makes pytest verbose. If the command's own name starts with a dash, put `--` in front of it.
 
 ### `keycmd: error: keyring has no backend to read credentials from`
 

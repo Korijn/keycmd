@@ -9,8 +9,19 @@ from .creds import get_env
 from .logs import error, log, set_verbose
 from .shell import run_cmd, run_shell
 
+EXAMPLES: str = """\
+examples:
+  keycmd npm install              run a command with the credentials exposed
+  keycmd -- ruff --version        -- ends keycmd's own options
+  keycmd 'echo $SECRET | wc -c'   quote it to use your shell's syntax
+  keycmd --shell                  open a subshell with the credentials exposed
+"""
+
 cli: argparse.ArgumentParser = argparse.ArgumentParser(
     prog="keycmd",
+    usage="%(prog)s [options] [--] [command ...]",
+    epilog=EXAMPLES,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
 )
 cli.add_argument(
     "-v",
@@ -40,7 +51,28 @@ cli.add_argument(
     default=False,
     help="spawn a subshell instead of running a command",
 )
-cli.add_argument("command", nargs=argparse.REMAINDER, help="command to run")
+cli.add_argument(
+    "command",
+    nargs=argparse.REMAINDER,
+    help="command to run, as separate arguments or as one quoted string",
+)
+
+
+def end_of_options(command: Sequence[str]) -> list[str]:
+    """The command to run, without the `--` that ends keycmd's own options
+
+    Every tool that goes on to run another one takes `--`, so it is typed
+    out of habit whether keycmd needs it or not. keycmd needs it only for a
+    command whose first word starts with a dash, which argparse would
+    otherwise read as an option of keycmd's; the rest of the command line
+    is a REMAINDER, so `keycmd ruff --version` already reaches ruff intact.
+
+    Since that REMAINDER is taken verbatim, the `--` is still sitting in it,
+    where it would go on to be the first word of the command.
+    """
+    if command and command[0] == "--":
+        return list(command[1:])
+    return list(command)
 
 
 def main(args: Sequence[str] | None = None) -> None:
@@ -68,10 +100,11 @@ def main(args: Sequence[str] | None = None) -> None:
     except tomllib.TOMLDecodeError as err:
         error(err)
     env = get_env(conf)
+    command = end_of_options(parsed.command)
 
     if parsed.shell:
         run_shell(env=env)
-    elif parsed.command:
-        run_cmd(parsed.command, env=env)
+    elif command:
+        run_cmd(command, env=env)
     else:
         error("missing command argument")

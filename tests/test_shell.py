@@ -98,8 +98,8 @@ def test_run_cmd_env(capfd, subprocess, shell):
     env = environ.copy()
     var_value = "foobar"
     env[VARNAME] = var_value
-    # one argument, the form the README recommends, so that the variable is
-    # expanded by the shell keycmd hands the command line to
+    # one argument, so that the variable is expanded by the shell keycmd
+    # hands the command line to, rather than quoted against expansion
     cmd = [f"echo {shell.env_var(VARNAME)}"]
 
     with pytest.raises(SystemExit) as exc_info:

@@ -89,14 +89,15 @@ def quote(shell_name: str, arg: str) -> str:
 def join_cmd(shell_name: str, cmd: Sequence[str]) -> str:
     """Turn a command into the single string a shell takes after -c
 
-    One argument is a command line already. `keycmd 'echo $SECRET'` is the
-    form the README recommends, and the shell is there precisely to
-    interpret it, so it is handed over as typed.
+    Several arguments are an argv vector — `keycmd npm install`, the form
+    the docs lead with — and joining them raw would feed their contents
+    back to the shell to be split into words a second time. Quoting each
+    one is what keeps `keycmd mytool 'hello world'` a single argument by
+    the time mytool sees it.
 
-    Several arguments are an argv vector, and joining them raw would feed
-    their contents back to the shell to be split into words a second time.
-    Quoting each one is what keeps `keycmd mytool 'hello world'` a single
-    argument by the time mytool sees it.
+    One argument is a command line already. `keycmd 'echo $SECRET | wc -c'`
+    is how the docs say to reach for shell syntax, and the shell is there
+    precisely to interpret it, so it is handed over as typed.
     """
     if len(cmd) == 1:
         return cmd[0]
