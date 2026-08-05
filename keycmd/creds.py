@@ -1,6 +1,7 @@
 import base64
 from os import environ
 
+from .backend import load_backend
 from .conf import AliasConf, Conf, KeyConf
 from .logs import error, vlog
 from .wsl import share_env
@@ -62,20 +63,15 @@ def get_env(conf: Conf) -> dict[str, str]:
     key_data: dict[str, KeyData] = {}
     keys = conf["keys"]
     if keys:
-        # keyring, and the backend it goes on to discover, together cost
-        # more time and memory than everything else keycmd does; a run that
-        # looks up no credential should not have to pay for either
-        import keyring
-
-        # which backend keyring settles on decides where the credentials
-        # come from, so it is the first thing to check when they are not
-        # the ones that were expected
-        vlog(f"keyring backend: {keyring.get_keyring()}")
+        # which backend the credentials come from is the first thing to
+        # check when they are not the ones that were expected, and
+        # load_backend reports it under --verbose
+        backend = load_backend()
 
         for key, src in keys.items():
             credential = src["credential"]
             username = src["username"]
-            password = keyring.get_password(credential, username)
+            password = backend.get_password(credential, username)
             if password is None:
                 error(
                     f"MISSING credential {credential}"

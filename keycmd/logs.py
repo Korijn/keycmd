@@ -35,8 +35,17 @@ def vlog_pretty(prefix: str, value: object) -> None:
         log(f"{prefix}{pformat(value)}")
 
 
-def error(msg: object) -> NoReturn:
+def error(msg: object, *hints: object) -> NoReturn:
+    """Report why keycmd cannot go on, and exit
+
+    The line that says what went wrong is rarely the line that says what
+    to do about it, so an error can carry as many of the second kind as
+    it takes. Both go to stderr, which is where keycmd writes anything
+    that is not the output of the command it was asked to run.
+    """
     log(f"error: {msg}", err=True)
+    for hint in hints:
+        log(f"hint: {hint}", err=True)
     sys.exit(1)
 
 
