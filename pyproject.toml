@@ -19,6 +19,7 @@ dependencies = [
 keycmd = "keycmd.cli:main"
 
 [project.urls]
+Documentation = "https://korijn.github.io/keycmd"
 Repository = "https://github.com/Korijn/keycmd"
 
 [dependency-groups]
@@ -31,6 +32,10 @@ dev = [
 ]
 ruff = ["ruff"]
 ty = ["ty"]
+docs = [
+    "mkdocs>=1,<2",
+    "mkdocs-material",
+]
 
 [tool.uv]
 default-groups = ["dev"]

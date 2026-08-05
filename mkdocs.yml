@@ -1,0 +1,64 @@
+site_name: keycmd
+site_description: Run any command with secrets from your OS keyring
+site_url: https://korijn.github.io/keycmd
+repo_url: https://github.com/Korijn/keycmd
+repo_name: Korijn/keycmd
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - content.tabs.link
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quick-start.md
+  - Guide:
+      - Running Commands: guide/running-commands.md
+      - Configuration: guide/configuration.md
+      - Keyring Backends: guide/keyring-backends.md
+      - WSL: guide/wsl.md
+      - Troubleshooting: guide/troubleshooting.md
+  - Examples:
+      - OpenAI API Key: examples/openai.md
+      - Azure Artifacts: examples/azure-artifacts.md
+  - Reference:
+      - CLI Reference: reference/cli.md
+      - Configuration Reference: reference/configuration.md
+  - Development:
+      - Contributing: development/contributing.md
+      - Testing: development/testing.md

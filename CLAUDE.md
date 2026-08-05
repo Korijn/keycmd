@@ -17,11 +17,14 @@ uv run pytest tests
 
 uv run pytest tests/test_conf.py::test_load_conf     # a single test
 uv run pytest -k "run_cmd and bash"                  # a single shell's parameters
+
+uv sync --group docs && uv run mkdocs serve          # the docs site, with live reload
+uv run mkdocs build --strict                         # what CI builds, warnings fatal
 ```
 
 ## Testing
 
-The tests that read and write credentials need an OS keyring that unlocks without user interaction. They skip themselves with a message when there is none, so the rest of the suite still runs; `KEYCMD_REQUIRE_OS_KEYRING=1` turns those skips into failures, and CI sets it. Windows needs no setup, macOS needs an unlocked keychain, and Linux needs the tests to run inside a d-bus session with `gnome-keyring` unlocked (see the Testing section of the README for the exact commands). `PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring` with `uv run --with keyrings.alt` avoids the OS keyring entirely.
+The tests that read and write credentials need an OS keyring that unlocks without user interaction. They skip themselves with a message when there is none, so the rest of the suite still runs; `KEYCMD_REQUIRE_OS_KEYRING=1` turns those skips into failures, and CI sets it. Windows needs no setup, macOS needs an unlocked keychain, and Linux needs the tests to run inside a d-bus session with `gnome-keyring` unlocked (see `docs/development/testing.md` for the exact commands). `PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring` with `uv run --with keyrings.alt` avoids the OS keyring entirely.
 
 `tests/test_wsl.py` covers calling the Windows install of keycmd from a shell inside WSL, and is opt in through `KEYCMD_TEST_WSL=1` on a Windows machine with WSL installed. `tests/test_wsl_interop.py` covers the same boundary as far as it can be reached without one, by faking the Windows process table, and runs everywhere. The rest of the suite stays off that code path entirely: the autouse `outside_wsl` fixture in `tests/conftest.py` clears the flags `wsl.py` detects with, so a run on Windows looks like a run anywhere else.
 
@@ -32,6 +35,12 @@ Things that bite in this suite:
 - **The remembered backend is redirected, always.** The autouse `cache_home` fixture in `tests/conftest.py` points `backend.CACHE_HOME` at a folder under `tmp_path`, so that a test run neither reads nor writes the note the machine it runs on is using, and every test starts with nothing remembered.
 - **Do not assume the suite runs unpinned.** `PYTHON_KEYRING_BACKEND` is how the README suggests running the suite without an OS keyring, and it outranks everything `backend.py` does, so a test about remembering has to `delenv` it first or it will be testing the path that deliberately remembers nothing.
 - Warnings are errors (`filterwarnings` in `pyproject.toml`), so a deprecation in a new Python release fails the suite rather than scrolling past.
+
+## Documentation
+
+The prose lives in the mkdocs site under `docs/`, built with mkdocs-material and deployed to GitHub Pages by `.github/workflows/docs.yml` on every push to `master` (pull requests build it without deploying, so a broken link fails before it lands). The nav in `mkdocs.yml` is explicit, so a new page has to be added there or the strict build fails on it. Screenshots live in `docs/assets/`.
+
+The README is a landing page and nothing more: what it says about behaviour it says in a sentence, and links to the page that covers it. New prose belongs on the site — a section that grows in the README is a section that has drifted from its page.
 
 ## Architecture
 

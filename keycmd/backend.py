@@ -47,6 +47,10 @@ CACHE_HOME: Path | None = None
 # where someone whose machine turned out to have no backend can find one
 BACKENDS_URL: str = "https://github.com/jaraco/keyring#third-party-backends"
 
+# and where someone inside a distribution can find out why keycmd belongs
+# on the windows side of the boundary instead
+WSL_DOCS_URL: str = "https://korijn.github.io/keycmd/guide/wsl/"
+
 
 def cache_home() -> Path:
     """Where this platform keeps per user files a program can afford to lose
@@ -206,13 +210,13 @@ def no_backend() -> NoReturn:
         f"see {BACKENDS_URL}",
     ]
     if in_distro():
-        # the README tells WSL users to install keycmd on windows for
-        # exactly this reason, and this is what not having done so looks
-        # like from inside the distribution
+        # the docs tell WSL users to install keycmd on windows for exactly
+        # this reason, and this is what not having done so looks like from
+        # inside the distribution
         hints.append(
             "inside WSL this usually means no keyring daemon is running;"
-            " the README explains how to reach the windows credential"
-            " manager instead"
+            f" see {WSL_DOCS_URL} to reach the windows credential manager"
+            " instead"
         )
     error("keyring has no backend to read credentials from", *hints)
 
