@@ -59,17 +59,20 @@ The other half — calling the Windows install of keycmd from a WSL shell to rea
 
 Everything about that boundary that can be decided without a Windows machine is in `tests/test_wsl_interop.py` instead, and runs everywhere: which process tree and working directory mean keycmd was called from a distribution, the command lines it builds for `wsl.exe`, and the `WSLENV` that carries the credentials across.
 
-The end to end tests are opt in, because installing WSL takes a CI job of its own. On a Windows machine that has WSL installed:
+The end to end tests run by themselves on a Windows machine whose WSL install answers, and skip themselves with the reason it did not anywhere else — no distribution registered, no keycmd on the `PATH` for one to call. The report header of every run says which it was:
 
-```powershell
-$env:KEYCMD_TEST_WSL = 1
-uv run pytest tests/test_wsl.py
 ```
+shells exercised: cmd, powershell, pwsh
+WSL distribution: Ubuntu
+```
+
+Set `KEYCMD_REQUIRE_WSL=1` to turn those skips into failures, the same way `KEYCMD_REQUIRE_OS_KEYRING` does for the keyring. CI sets it on the one job that installs WSL — the other jobs have none, and skip — so that a distribution that fails to provision fails the build instead of quietly reducing it.
 
 ## Things that bite in this suite
 
 * **Never assume a shell.** The `shell` fixture parametrizes over every shell of the platform that is installed, so a test using it runs several times. Ask the `Shell` object for the dialect (`env_var`, `unset_env_var`, `command_not_found_statuses`) instead of branching on the platform.
 * **`wsl.exe` mangles its command line**: backslashes disappear and quotes are stripped before the distribution sees them. Pass paths translated to `/mnt/...` by `wsl_path`, unquoted and free of spaces, and keep remote scripts on one line.
 * **The remembered backend is redirected, always.** An autouse fixture points `backend.CACHE_HOME` at a folder under `tmp_path`, so a test run neither reads nor writes the note the machine it runs on is using.
+* **A backend subclassed in a test joins keyring's registry** for the rest of the session, so a later search can settle on it and hand the suite a backend that holds no credentials, which arrives as an OS keyring that skipped itself. A test double takes itself out of the running with `viable = False`.
 * **Do not assume the suite runs unpinned.** `PYTHON_KEYRING_BACKEND` outranks everything `backend.py` does, so a test about remembering has to `delenv` it first, or it will be testing the path that deliberately remembers nothing.
 * **Warnings are errors**, so a deprecation in a new Python release fails the suite rather than scrolling past.

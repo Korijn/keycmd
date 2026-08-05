@@ -132,7 +132,10 @@ jobs:
     timeout-minutes: 20
     env:
       KEYCMD_REQUIRE_OS_KEYRING: "1"
-      KEYCMD_TEST_WSL: "1"
+      # the WSL tests run wherever a distribution answers and skip where
+      # none does; this is the one job that provisions one, so here a skip
+      # is a broken setup rather than a machine without WSL
+      KEYCMD_REQUIRE_WSL: "1"
     steps:
       - uses: actions/checkout@v7
       - name: Install uv and Python 3.14

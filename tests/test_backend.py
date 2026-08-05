@@ -34,8 +34,16 @@ NULL = "keyring.backends.null.Keyring"
 
 
 class FakeChainer(ChainerBackend):
-    """A chainer with a fixed membership, instead of the one on this machine"""
+    """A chainer with a fixed membership, instead of the one on this machine
 
+    Subclassing a backend registers it with keyring, and a chainer of more
+    than one backend outranks everything else, so the search any later
+    test runs would settle on this one and find no credentials in it.
+    Keyring skips a backend that says it is not viable, which is the way
+    out of a registry there is no taking a class back out of.
+    """
+
+    viable: ClassVar = False
     backends: ClassVar = [NullKeyring(), NoKeyring()]
 
 
