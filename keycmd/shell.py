@@ -1,19 +1,21 @@
 import os
+import shlex
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from pprint import pformat
-from subprocess import run
 from sys import exit
 from typing import NoReturn
 
 from shellingham import ShellDetectionFailure, detect_shell
 
-from .logs import vlog, vwarn
+from .logs import vlog, vlog_pretty, vwarn
 from .wsl import cmd_argv, from_wsl, shell_argv
 
 USE_SUBPROCESS: bool = False  # exposed for testing
 IS_WINDOWS: bool = os.name == "nt"
 IS_POSIX: bool = os.name == "posix"
+
+# shells that take -c, but do not quote the way a posix shell does
+POWERSHELL: frozenset[str] = frozenset({"powershell", "pwsh"})
 
 
 def exec(args: list[str], env: Mapping[str, str] | None = None) -> NoReturn:
@@ -21,7 +23,10 @@ def exec(args: list[str], env: Mapping[str, str] | None = None) -> NoReturn:
         env = os.environ
     if USE_SUBPROCESS or IS_WINDOWS:
         # windows does not support process replacement
-        # as well as posix systems do
+        # as well as posix systems do; the posix path below never spawns a
+        # subprocess, so it does not pay to import one either
+        from subprocess import run
+
         p = run(args, shell=False, env=env)
         exit(p.returncode)
     # i know this looks like a bug
@@ -54,6 +59,55 @@ def get_shell() -> tuple[str, str]:
     return shell_name, shell_path
 
 
+def quote(shell_name: str, arg: str) -> str:
+    """Quote one argument so that a shell hands it on as a single word
+
+    Everything that is not powershell is quoted the posix way, which
+    covers every shell this is tested against and the great majority of
+    what shellingham can detect. The exotic ones it also detects, csh and
+    fish and nu among them, spell quoting their own way, and an argument
+    that needs quoting may not survive one intact. An argument that needs
+    no quoting is untouched, so the common command is unaffected either
+    way.
+
+    Quoting an argument is not always enough to deliver it. Windows
+    powershell passes arguments to a native command the way it always
+    has, which drops an embedded double quote and an empty argument no
+    matter how they are written; powershell 7.3 fixed that, and pwsh
+    carries both. cmd reaches a command through the windows command line,
+    which cannot hold a newline at all.
+    """
+    quoted = shlex.quote(arg)
+    if shell_name not in POWERSHELL or quoted == arg:
+        # a posix shell, or an argument that needs no quoting in any shell
+        return quoted
+    # where a posix shell ends a single quoted string to spell a quote,
+    # powershell doubles the quote and stays inside the string
+    return "'" + arg.replace("'", "''") + "'"
+
+
+def join_cmd(shell_name: str, cmd: Sequence[str]) -> str:
+    """Turn a command into the single string a shell takes after -c
+
+    One argument is a command line already. `keycmd 'echo $SECRET'` is the
+    form the README recommends, and the shell is there precisely to
+    interpret it, so it is handed over as typed.
+
+    Several arguments are an argv vector, and joining them raw would feed
+    their contents back to the shell to be split into words a second time.
+    Quoting each one is what keeps `keycmd mytool 'hello world'` a single
+    argument by the time mytool sees it.
+    """
+    if len(cmd) == 1:
+        return cmd[0]
+    quoted = [quote(shell_name, arg) for arg in cmd]
+    if shell_name in POWERSHELL and quoted[0] != cmd[0]:
+        # powershell reads a quoted command name as a string to print, and
+        # needs the call operator to run it instead
+        quoted.insert(0, "&")
+    return " ".join(quoted)
+
+
 def run_shell(env: Mapping[str, str] | None = None) -> NoReturn:
     """Open an interactive shell for the user to interact
     with."""
@@ -79,7 +133,7 @@ def run_cmd(cmd: Sequence[str], env: Mapping[str, str] | None = None) -> NoRetur
             opt = "/C"
         else:
             opt = "-c"
-            cmd = [" ".join(cmd)]
+            cmd = [join_cmd(shell_name, cmd)]
         full_command = [shell_path, opt, *cmd]
-    vlog(f"running command: {pformat(full_command)}")
+    vlog_pretty("running command: ", full_command)
     exec(full_command, env)

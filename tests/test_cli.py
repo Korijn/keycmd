@@ -1,7 +1,16 @@
+import sys
+from subprocess import run
+
 import pytest
 
 from keycmd import __version__
 from keycmd.cli import cli, main
+
+# modules that cost more to import than the rest of keycmd together, and
+# that nothing needs until it is asked for: keyring only once a credential
+# is looked up, pprint only under --verbose, subprocess only on the windows
+# code path, which cannot replace its own process
+LAZY_IMPORTS = ("keyring", "pprint", "subprocess")
 
 
 def test_cli_version(capfd):
@@ -10,10 +19,12 @@ def test_cli_version(capfd):
 
 
 def test_cli(capfd, shell_credentials, local_conf, userprofile, subprocess, shell):
+    # one argument, the form the README recommends, so that the shell
+    # keycmd hands the command line to is the one that expands the variable
     var = shell.env_var(local_conf.varname)
 
     with pytest.raises(SystemExit) as exc_info:
-        main(["echo", var])
+        main([f"echo {var}"])
     assert exc_info.value.args[0] == 0
     assert capfd.readouterr().out.strip() == shell_credentials.password
 
@@ -53,6 +64,22 @@ def test_cli_invalid_conf(capfd, ch_tmpdir, userprofile):
         main(["echo", "foo"])
     assert exc_info.value.args[0] == 1
     assert "invalid TOML in" in capfd.readouterr().err
+
+
+def test_cli_import_stays_lean():
+    """Importing the cli does not pay for what a run may never use
+
+    A fresh interpreter, because the test suite has imported keyring long
+    before this point. Every one of these is a module level import away
+    from landing back on the startup path of every invocation.
+    """
+    code = (
+        "import sys, keycmd.cli;"
+        f"print(' '.join(m for m in {LAZY_IMPORTS!r} if m in sys.modules))"
+    )
+    p = run([sys.executable, "-c", code], capture_output=True)
+    assert p.returncode == 0, p.stderr.decode()
+    assert p.stdout.decode().split() == []
 
 
 def test_cli_extra_args():

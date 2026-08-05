@@ -1,9 +1,9 @@
 import tomllib
+from collections.abc import Iterator
 from pathlib import Path
-from pprint import pformat
-from typing import Any, Literal, NotRequired, TypedDict, cast, overload
+from typing import Any, NotRequired, TypedDict, cast
 
-from .logs import vlog
+from .logs import vlog, vlog_pretty
 
 
 class KeyConf(TypedDict):
@@ -54,27 +54,16 @@ def load_pyproj(path: Path) -> dict[str, Any]:
     return data.get("tool", {}).get("keycmd", {})
 
 
-@overload
-def find_file(fname: str, first_only: Literal[True] = True) -> Path | None: ...
+def walk_up() -> Iterator[Path]:
+    """Yield the working directory and its parents, nearest first
 
-
-@overload
-def find_file(fname: str, first_only: Literal[False]) -> list[Path]: ...
-
-
-def find_file(fname: str, first_only: bool = True) -> Path | list[Path] | None:
-    """Find a file by walking up the filesystem, starting at cwd"""
+    The walk stops at a git repository, so that it never leaves one, and
+    otherwise just below the home folder or at the root of the file system.
+    """
     cur = Path.cwd()
     home = Path.home()
-    results: list[Path] = []
     while True:
-        candidate = cur / fname
-        if candidate.is_file():
-            hit = candidate.resolve()
-            if first_only:
-                return hit
-            else:
-                results.append(hit)
+        yield cur
         # don't search outside git repositories
         if (cur / ".git").is_dir():
             break
@@ -85,12 +74,6 @@ def find_file(fname: str, first_only: bool = True) -> Path | list[Path] | None:
         if cur.parent == cur:
             break
         cur = cur.parent
-    if not first_only:
-        # return .keycmd files in order in which they should
-        # be loaded and merged
-        results.reverse()
-        return results
-    return None
 
 
 def defaults() -> dict[str, Any]:
@@ -129,9 +112,20 @@ def load_conf() -> Conf:
         vlog(f"loading config file {user_keyconf}")
         conf = merge_conf(conf, load_toml(user_keyconf))
 
-    # .keycmd
-    local_keycmds = find_file(".keycmd", first_only=False)
-    for local_keycmd in local_keycmds:
+    # both searches cover the same ground, so they share a single walk
+    local_keycmds: list[Path] = []
+    pyproj: Path | None = None
+    for directory in walk_up():
+        candidate = directory / ".keycmd"
+        if candidate.is_file():
+            local_keycmds.append(candidate.resolve())
+        if pyproj is None:
+            candidate = directory / "pyproject.toml"
+            if candidate.is_file():
+                pyproj = candidate.resolve()
+
+    # .keycmd, outermost first, so that the nearest one wins
+    for local_keycmd in reversed(local_keycmds):
         if local_keycmd == user_keyconf:
             vlog(f"skipping config file {local_keycmd} (already loaded)")
             continue
@@ -139,12 +133,11 @@ def load_conf() -> Conf:
         conf = merge_conf(conf, load_toml(local_keycmd))
 
     # pyproject.toml
-    pyproj = find_file("pyproject.toml")
     if pyproj is not None:
         vlog(f"loading config file {pyproj}")
         conf = merge_conf(conf, load_pyproj(pyproj))
 
-    vlog(f"merged config:\n{pformat(conf)}")
+    vlog_pretty("merged config:\n", conf)
 
     # the config is user authored, so this is a statement of the shape keycmd
     # expects rather than a guarantee; get_env reports violations as user errors

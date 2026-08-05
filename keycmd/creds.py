@@ -1,14 +1,12 @@
 import base64
 from os import environ
 
-import keyring
-
-from .conf import Conf
+from .conf import AliasConf, Conf, KeyConf
 from .logs import error, vlog
 from .wsl import share_env
 
-# credential, username, password, apply_b64, format string
-KeyData = tuple[str, str, str, bool, str | None]
+# credential, username, password
+KeyData = tuple[str, str, str]
 
 
 def b64(value: str) -> str:
@@ -36,52 +34,72 @@ def expose(
     env[key] = password
 
 
+def expose_conf(
+    env: dict[str, str],
+    name: str,
+    data: KeyData,
+    src: KeyConf | AliasConf,
+    what: str,
+) -> None:
+    """Expose a credential under the b64 and format options of one config entry
+
+    A key and an alias differ in where the credential comes from, not in
+    what happens to it on the way into the environment.
+    """
+    apply_b64 = src.get("b64", False)
+    format_string = src.get("format")
+    expose(env, name, *data, apply_b64, format_string)
+    vlog(
+        f"{what} as environment variable {name}"
+        f" (b64: {apply_b64}, format: {format_string})"
+    )
+
+
 def get_env(conf: Conf) -> dict[str, str]:
     """Load credentials from the OS keyring according to user configuration"""
     env = environ.copy()
 
     key_data: dict[str, KeyData] = {}
-    for key, src in conf["keys"].items():
-        password = keyring.get_password(src["credential"], src["username"])
-        if password is None:
-            error(
-                f"MISSING credential {src['credential']}"
-                f" with user {src['username']}"
-                f" as it does not exist"
-            )
-        apply_b64 = src.get("b64", False)
-        format_string = src.get("format")
-        key_data[key] = (
-            src["credential"],
-            src["username"],
-            password,
-            apply_b64,
-            format_string,
-        )
-        expose(env, key, *key_data[key])
-        vlog(
-            f"exposing credential {src['credential']}"
-            f" with user {src['username']}"
-            f" as environment variable {key}"
-            f" (b64: {apply_b64}, format: {format_string})"
-        )
+    keys = conf["keys"]
+    if keys:
+        # keyring, and the backend it goes on to discover, together cost
+        # more time and memory than everything else keycmd does; a run that
+        # looks up no credential should not have to pay for either
+        import keyring
 
-    for alias, alias_src in conf.get("aliases", {}).items():
+        # which backend keyring settles on decides where the credentials
+        # come from, so it is the first thing to check when they are not
+        # the ones that were expected
+        vlog(f"keyring backend: {keyring.get_keyring()}")
+
+        for key, src in keys.items():
+            credential = src["credential"]
+            username = src["username"]
+            password = keyring.get_password(credential, username)
+            if password is None:
+                error(
+                    f"MISSING credential {credential}"
+                    f" with user {username}"
+                    f" as it does not exist"
+                )
+            key_data[key] = (credential, username, password)
+            expose_conf(
+                env,
+                key,
+                key_data[key],
+                src,
+                f"exposing credential {credential} with user {username}",
+            )
+
+    aliases = conf.get("aliases", {})
+    for alias, alias_src in aliases.items():
+        # the credential is already in hand, only the options differ
         data = key_data.get(alias_src["key"])
         if data is None:
             error(f"MISSING alias key {alias_src['key']}")
-        # re-use base data but replace apply_b64 and format_string
-        credential, username, password, _, _ = data
-        apply_b64 = alias_src.get("b64", False)
-        format_string = alias_src.get("format")
-        expose(env, alias, credential, username, password, apply_b64, format_string)
-        vlog(
-            f"aliasing {alias_src['key']}"
-            f" as environment variable {alias}"
-            f" (b64: {apply_b64}, format: {format_string})"
-        )
+        expose_conf(env, alias, data, alias_src, f"aliasing {alias_src['key']}")
 
     # an environment does not cross the boundary between WSL and windows
     # by itself, whichever side of it the command ends up running on
-    share_env(env, [*conf["keys"], *conf.get("aliases", {})])
+    share_env(env, [*keys, *aliases])
     return env

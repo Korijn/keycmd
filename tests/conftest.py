@@ -25,7 +25,11 @@ REQUIRE_OS_KEYRING = os.environ.get("KEYCMD_REQUIRE_OS_KEYRING", "") not in {"",
 
 # shells to exercise, if installed
 POSIX_SHELLS = ("sh", "bash", "zsh")
-WINDOWS_SHELLS = ("cmd", "powershell", "pwsh")
+WINDOWS_SHELLS = ("cmd", "powershell")
+# pwsh installs on every platform keycmd supports, and is the one shell
+# taking -c that does not quote the way a posix shell does, so it is worth
+# exercising wherever it turns up rather than on windows alone
+ANY_PLATFORM_SHELLS = ("pwsh",)
 
 # credential used by the keyring backed fixtures
 KEY = "__keycmd_testß"
@@ -41,8 +45,17 @@ VARNAME = "KEYCMD_TEST"
 
 
 def pytest_report_header(config):
-    """Report which keyring backend the run picked up"""
-    return f"keyring backend: {keyring.get_keyring()}"
+    """Report what this run picked up, both of which vary per machine
+
+    Which shells a run covers is otherwise only visible in the ids of the
+    tests that failed, so a run where they all pass does not say whether a
+    shell was exercised or simply absent.
+    """
+    shells = ", ".join(shell.name for shell in installed_shells())
+    return [
+        f"keyring backend: {keyring.get_keyring()}",
+        f"shells exercised: {shells or 'none'}",
+    ]
 
 
 @dataclass(frozen=True)
@@ -78,10 +91,35 @@ class Shell:
         # posix shells standardize on 127
         return {127}
 
+    def carries(self, args):
+        """Can this shell hand these arguments on to a command unchanged?
+
+        A shell keycmd hands a quoted command line to can carry anything,
+        and the posix shells and pwsh do. The two windows shells reach a
+        command through the windows command line instead, which is a
+        narrower thing than an argv vector, and neither limit below is one
+        that quoting on keycmd's side can lift.
+        """
+        if self.name == "cmd":
+            # cmd is handed its arguments separately, and what quotes them
+            # on the way is the windows runtime, which knows nothing of
+            # cmd's own metacharacters: cmd parses those in any argument
+            # the runtime saw no reason to quote, and expands %VAR% even
+            # inside one that it did. A command line is also a line, so a
+            # newline in an argument ends it early.
+            return not any(set(arg) & set('&|<>()^%"\n') for arg in args)
+        if self.name == "powershell":
+            # windows powershell passes arguments to a native command the
+            # way it always has, dropping an embedded double quote and an
+            # empty argument outright. Powershell 7.3 fixed that, so pwsh
+            # is held to the whole battery.
+            return all(arg and '"' not in arg for arg in args)
+        return True
+
 
 def installed_shells():
     """The shells of this platform's candidate list that are installed"""
-    candidates = WINDOWS_SHELLS if IS_WINDOWS else POSIX_SHELLS
+    candidates = (WINDOWS_SHELLS if IS_WINDOWS else POSIX_SHELLS) + ANY_PLATFORM_SHELLS
     found = []
     for name in candidates:
         path = which(name)
