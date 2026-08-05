@@ -56,7 +56,16 @@ def get_shell() -> tuple[str, str]:
 
 
 def quote(shell_name: str, arg: str) -> str:
-    """Quote one argument so that a shell hands it on as a single word"""
+    """Quote one argument so that a shell hands it on as a single word
+
+    Everything that is not powershell is quoted the posix way, which
+    covers every shell this is tested against and the great majority of
+    what shellingham can detect. The exotic ones it also detects, csh and
+    fish and nu among them, spell quoting their own way, and an argument
+    that needs quoting may not survive one intact. An argument that needs
+    no quoting is untouched, so the common command is unaffected either
+    way.
+    """
     quoted = shlex.quote(arg)
     if shell_name not in POWERSHELL or quoted == arg:
         # a posix shell, or an argument that needs no quoting in any shell

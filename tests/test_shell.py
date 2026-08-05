@@ -1,3 +1,4 @@
+import json
 import sys
 from os import environ
 from pprint import pformat
@@ -184,17 +185,48 @@ def test_run_cmd_quoting(monkeypatch, shell_name, cmd, expected):
     assert invocations == [[shell_path, *expected]]
 
 
-def test_run_cmd_preserves_argv(capfd, subprocess, shell):
-    """An argument with a space in it arrives as one argument
+# every way a shell might be tempted to read an argument as something
+# other than the word it is: quoting of its own, expansions, globs, command
+# separators, redirections, and whitespace it would otherwise split on
+ROUNDTRIP_ARGS = [
+    ["hello world"],
+    ["it's"],
+    ['say "hi"'],
+    ["mixed 'single' and \"double\""],
+    [r"C:\path\to", "back\\slash"],
+    ["$HOME", "${X}", "$(id)"],
+    ["`id`"],
+    ["*", "?", "[a-z]"],
+    ["a;b", "a&b", "a|b"],
+    ["a\nb"],
+    ["a\tb"],
+    [""],
+    ["a!b"],
+    ["~", "~root"],
+    ["ünïcødeß"],
+    [">out", "<in", "2>&1"],
+    ["(a)", "{b}"],
+    ["#c", "a#b"],
+    ["a b'c\"d\\e$f`g;h|i*j"],
+]
+
+
+@pytest.mark.parametrize("args", ROUNDTRIP_ARGS, ids=lambda args: repr(args))
+def test_run_cmd_preserves_argv(capfd, subprocess, shell, args):
+    """Arguments arrive as the words they were, whatever is in them
 
     Through python rather than echo, because it is the argv the command
     receives that is under test, and every platform running this suite has
-    an interpreter to report it.
+    an interpreter that can report it back.
     """
+    if not shell.carries(args):
+        pytest.skip(f"{shell.name} parses these itself before the command sees them")
+
+    show = "import sys, json; print(json.dumps(sys.argv[1:]))"
     with pytest.raises(SystemExit) as exc_info:
-        run_cmd([sys.executable, "-c", "import sys; print(sys.argv[1])", "hello world"])
+        run_cmd([sys.executable, "-c", show, *args])
     assert exc_info.value.args[0] == 0
-    assert capfd.readouterr().out.strip() == "hello world"
+    assert json.loads(capfd.readouterr().out) == args
 
 
 @pytest.fixture

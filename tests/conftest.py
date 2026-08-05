@@ -78,6 +78,20 @@ class Shell:
         # posix shells standardize on 127
         return {127}
 
+    def carries(self, args):
+        """Can this shell hand these arguments on to a command unchanged?
+
+        Every shell that takes -c is handed a command line keycmd quoted
+        itself, so it can carry anything. cmd is handed its arguments
+        separately, and what quotes them on the way is the windows runtime,
+        which knows nothing of cmd's own metacharacters: cmd goes on to
+        parse those in any argument the runtime saw no reason to quote, and
+        expands %VAR% even inside one that it did.
+        """
+        if self.name != "cmd":
+            return True
+        return not any(set(arg) & set('&|<>()^%"') for arg in args)
+
 
 def installed_shells():
     """The shells of this platform's candidate list that are installed"""
